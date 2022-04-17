@@ -11,12 +11,25 @@ from ruins.core import Config
 from ruins.core.debug_view import debug_view
 
 
+_TRANSLATE_EN = dict(
+    introduction="""Inside the RUINS App you can explore different topics. Please select one, you can select another topic later in the sidebar.""",
+    warming_explainer="""**Warming**: In this topic we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.""",
+    weather_indices_explainer="""**Weather indices**: Short weather indices description."""
+    )
+_TRANSLATE_DE = dict(
+    introduction="""Innerhalb der RUINS App können verschiedene Themen erkundet werden. Bitte wählen Sie eines aus, das Thema kann später über die Seitenleiste geändert werden.""",
+    warming_explainer="""**Erwärmung**: In diesem Thema werden Visualisierungen zur Verfügung gestellt, anhand derer sich Veränderungen in beobachteten Wetterdaten untersuchen lassen. Anhand verschiedener Variablen und Klimaindizes lässt sich untersuchen, wie sich der Klimawandel in verschiedenen Variablen, an verschiedenen Stationen und mit unterschiedlicher zeitlicher Aggregation manifestiert.""",
+    weather_indices_explainer="""**Klimaindizes**: Kurze Beschreibung des Themas Klimaindizes"""
+    )
+
+
 def current_topic_selector(config: Config, expander_container = st.sidebar, **kwargs):
     """
     Select a topic from a list of topics with a short description and a 
     symbolic image.
     """
     container = st if 'container' not in kwargs else kwargs['container']
+    t = kwargs.get('translator', config.translator(en=_TRANSLATE_EN, de=_TRANSLATE_DE))
 
     if 'topic_list' in kwargs:
         topic_list = kwargs['topic_list']
@@ -25,14 +38,15 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
 
     # check if the topic was set
     if config.has_key('current_topic'):
-        expander_container.selectbox('Select topic:', topic_list, key='current_topic')
+        cap = 'Select topic:' if config.lang == 'en' else 'Thema auswählen:'
+        expander_container.selectbox(cap, topic_list, key='current_topic')
         return
 
     # From here on full topic select
     # introduction
-    container.title("Select a topic you would like to explore")
-    container.markdown("""Inside the RUINS App you can explore different topics. Please select one, you can select another topic later in the sidebar.""")
-
+    container.title("Select a topic you would like to explore" if config.lang == 'en' else "Wählen Sie ein Thema, das Sie erkunden möchten")
+    container.markdown(t('introduction'))
+    
     # default value
     warming = None
 
@@ -45,8 +59,8 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
         image = Image.open('RUINS_logo_small.png') # idea: display symbol images for each topic
     
         image_column.image(image)
-        warming = button_column.button("Click here to select topic Warming")
-        description_column.markdown("""**Warming**: In this topic we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.""")
+        warming = button_column.button("Click here to select topic Warming" if config.lang == 'en' else "Hier klicken um das Thema Erwärmung auszuwählen")
+        description_column.markdown(t('warming_explainer'))
         row_container.markdown("""___""")
 
     # default value
@@ -60,8 +74,8 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
         image_column, description_column, button_column = row_container.columns([1,3,1])
 
         image_column.image(image)
-        weather_indices = button_column.button("Click here to select topic Weather indices")
-        description_column.markdown("""**Weather indices**: Short weather indices description.""") # TODO
+        weather_indices = button_column.button("Click here to select topic Weather indices" if config.lang == 'en' else "Hier klicken um das Thema Klimaindizes auszuwählen")
+        description_column.markdown(t('weather_indices_explainer')) # TODO
         row_container.markdown("""___""")
     
     if warming:
