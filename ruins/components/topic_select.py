@@ -33,26 +33,36 @@ def current_topic_selector(config: Config, expander_container = st.sidebar, **kw
     container.title("Select a topic you would like to explore")
     container.markdown("""Inside the RUINS App you can explore different topics. Please select one, you can select another topic later in the sidebar.""")
 
-    # use a new container for each row
-    row_container = st
-    # column topic select (image, description, button)
-    image_column, description_column, button_column = row_container.columns([1,3,1])
-    
-    image = Image.open('RUINS_logo_small.png') # idea: display symbol images for each topic
-    
-    image_column.image(image)
-    warming = button_column.button("Click here to select topic Warming")
-    description_column.markdown("""**Warming**: In this topic we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.""")
-    row_container.markdown("""___""")
+    # default value
+    warming = None
 
-    row_container = st
-    # column topic select (image, description, button)
-    image_column, description_column, button_column = row_container.columns([1,3,1])
+    if 'Warming' in topic_list:
+        # use a new container for each row
+        row_container = st
 
-    image_column.image(image)
-    weather_indices = button_column.button("Click here to select topic Weather indices")
-    description_column.markdown("""**Weather indices**: Short weather indices description.""") # TODO
-    row_container.markdown("""___""")
+        # column topic select (image, description, button)
+        image_column, description_column, button_column = row_container.columns([1,3,1])
+        image = Image.open('RUINS_logo_small.png') # idea: display symbol images for each topic
+    
+        image_column.image(image)
+        warming = button_column.button("Click here to select topic Warming")
+        description_column.markdown("""**Warming**: In this topic we provide visualisations to explore changes in observed weather data. Based on different variables and climate indices it is possible to investigate how climate change manifests itself in different variables, at different stations and with different temporal aggregation.""")
+        row_container.markdown("""___""")
+
+    # default value
+    weather_indices = None
+
+    if 'Weather Indices' in topic_list:
+        # use a new container for each row
+        row_container = st
+        
+        # column topic select (image, description, button)
+        image_column, description_column, button_column = row_container.columns([1,3,1])
+
+        image_column.image(image)
+        weather_indices = button_column.button("Click here to select topic Weather indices")
+        description_column.markdown("""**Weather indices**: Short weather indices description.""") # TODO
+        row_container.markdown("""___""")
     
     if warming:
         st.session_state.current_topic = 'Warming'  
