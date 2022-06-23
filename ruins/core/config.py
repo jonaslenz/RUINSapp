@@ -44,9 +44,13 @@ class Config(Mapping):
 
         # datafile names, without file extension
         self.datafile_names = {
-            'weather': 'weather',
             'stations': 'stats',
+            'cordex_grid': 'CORDEXgrid',
+            'cimp_grid': 'CIMP5grid',
+            'weather': 'weather',
             'climate': 'cordex_krummh'
+            #'climate_coast': 'cordex_coast',
+            #'hydro': 'hydro_krummh'
         }
 
         # mime readers

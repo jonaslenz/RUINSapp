@@ -145,8 +145,8 @@ def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
 # TODO: extract plotting
 def climate_indices(dataManager: DataManager, config: Config):
     # get data
-    weather = dataManager['weather'].read()
-    climate = dataManager['cordex_coast'].read()
+    weather = dataManager.read('weather')
+    climate = dataManager.read('climate')
 
     # get the relevant settings
     stati = config.get('selected_station', 'coast')
@@ -223,7 +223,7 @@ def climate_indices(dataManager: DataManager, config: Config):
 @partial_memoize(hash_names=['name', 'station', 'variable', 'time', '_filter'])
 def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, time: str, station: str = None, _filter: dict = None) -> pd.DataFrame:
     # get weather data
-    arr: xr.Dataset = dataManager[name].read()
+    arr: xr.Dataset = dataManager.read(name)
 
     if _filter is not None:
         arr = arr.filter_by_attrs(**_filter)
@@ -279,10 +279,10 @@ def climate_data_selector(dataManager: DataManager, config: Config, it: int = 0,
 
     # make the data sub-selection
     if ref == 'weather':
-        data = dataManager['weather'].read()
+        data = dataManager.read('weather')
         drngx = (1980, 2000)
     else:
-        data = dataManager['cordex_coast'].read()
+        data = dataManager.read('climate')
         drngx = (2050, 2070)
 
     # filter for rcps
@@ -359,7 +359,7 @@ def climate_plots(dataManager: DataManager, config: Config, expander_container =
 
 
 def warming_data_plotter(dataManager: DataManager, config: Config):
-    weather: xr.Dataset = dataManager['weather'].read()
+    weather: xr.Dataset = dataManager.read('weather')
     statios = list(weather.keys())
     stat1 = config['selected_station']
 
