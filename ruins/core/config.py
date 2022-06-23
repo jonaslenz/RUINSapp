@@ -42,6 +42,13 @@ class Config(Mapping):
         self.datapath = pjoin(self.basepath, 'data')
         self.hot_load = kwargs.get('hot_load', False)
 
+        # datafile names
+        self.datafile_names = {
+            'weather': 'weather.nc',
+            'stations': 'stats.csv'
+            #'climate': 'cordex_coast'
+        }
+
         # mime readers
         self.default_sources = {
             'nc': 'HDF5Source',
@@ -66,7 +73,7 @@ class Config(Mapping):
         self.layout = 'centered'
 
         # store the keys
-        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout']
+        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'datafile_names', 'default_sources', 'sources_args', 'layout']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}
