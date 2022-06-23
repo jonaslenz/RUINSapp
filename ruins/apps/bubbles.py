@@ -88,7 +88,7 @@ def main_app(**kwargs):
     concept_explainer(config)
 
     # show bubbles
-    show_bubbles(dataManager)
+    show_bubbles(dataManager, config)
 
     # end state debug
     debug_view.debug_view(dataManager, config, debug_name='DEBUG - finished app')
