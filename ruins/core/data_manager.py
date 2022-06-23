@@ -159,15 +159,13 @@ class DataManager(Mapping):
             self.from_config(datapath=datapath, cache=cache, hot_load=hot_load, debug=debug, **kwargs)
     
     def read(self, name_or_file: str):
-        # if config init then there is an attrribute called datafile_name
+        # if config init then there is an attrribute called datafile_names
         if 'datafile_names' in self._config:
             # if name_or_file exists in Config.datafile_names, the filename stored there is used. Otherwise name_or_file is considered the filename.
             identifier = self._config['datafile_names'].get(name_or_file, name_or_file) # unittest
             identifier = identifier.split('.')[0] # don't use file extension (stats.csv -> stats)
-            print(identifier)
         else:
             identifier = name_or_file
-            print(identifier)
         
         return self.get(identifier).read()
 

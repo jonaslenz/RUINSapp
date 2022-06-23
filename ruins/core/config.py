@@ -42,11 +42,11 @@ class Config(Mapping):
         self.datapath = pjoin(self.basepath, 'data')
         self.hot_load = kwargs.get('hot_load', False)
 
-        # datafile names
+        # datafile names, without file extension
         self.datafile_names = {
-            'weather': 'weather.nc',
-            'stations': 'stats.csv'
-            #'climate': 'cordex_coast'
+            'weather': 'weather',
+            'stations': 'stats',
+            'climate': 'cordex_krummh'
         }
 
         # mime readers
