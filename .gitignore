@@ -131,3 +131,5 @@ dmypy.json
 # project specific
 data.zip
 data/*
+data_legacy/*
+original_data.zip
