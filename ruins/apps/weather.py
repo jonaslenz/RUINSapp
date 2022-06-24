@@ -378,7 +378,8 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
             rcp = config['current_rcp']
 
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1Y', _filter=dict(RCP=rcp))
-            data_ub = applySDM(wdata, data, meth='abs')
+            # data_ub = applySDM(wdata, data, meth='abs')
+            data_ub = data
 
             dataUq = float(np.ceil(data_ub.max().quantile(0.76)))
             datamax = float(np.max([dataUq, np.round(data_ub.max().max(), 1)]))
@@ -400,21 +401,6 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         ax.set_xlim(datarng[0],datarng[1])
         plot_area.pyplot(fig)
 
-        sndstat = st.checkbox('Show second station for comparison')
-
-        if sndstat:
-            stat2 = st.selectbox('Select second station:', [x for x in statios if x != config['selected_station']])
-            wdata2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1Y')
-
-            fig, ax2 = kde(wdata2, split_ts=3)
-            ax2.set_title(stat2 + ' Annual ' + navi_var)
-            ax2.set_xlabel('T (°C)')
-            ax2.set_xlim(datarng[0],datarng[1])
-            st.pyplot(fig)
-
-        # Re-implement this as a application wide service
-        # expl_md = read_markdown_file('explainer/stripes.md')
-        # st.markdown(expl_md, unsafe_allow_html=True)
 
     elif config['temporal_agg'] == 'Monthly':
         wdata = _reduce_weather_data(dataManager, name='weather', station=config['selected_station'], variable=vari, time='1M')
@@ -422,72 +408,24 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
         ref_yr = control_right.slider('Reference period for anomaly calculation:', min_value=int(wdata.index.year.min()), max_value=2020,value=(max(1980, int(wdata.index.year.min())), 2000))
 
         if config['include_climate']:
-            # get the rcp
+            # get the rcp and data
             rcp = config['current_rcp']
             data = _reduce_weather_data(dataManager, name='cordex_coast', variable=vari, time='1M', _filter=dict(RCP=rcp))
-
-            #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
-            ub = True # simplify here and automatically apply bias correction
-
-            if ub:
-                data_ub = applySDM(wdata, data, meth='abs')
-                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data_ub.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
-            else:
-                fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
-
-            # old matplotlib include
-            #plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            #plot_area.pyplot(fig)
+            
+            # make the plot
+            fig = yrplot_hm(pd.concat([wdata.loc[wdata.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
             fig.update_layout(title = f"{stat1} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
             plot_area.plotly_chart(fig, use_container_width=True)
 
             # compare to second station
             sndstat = st.checkbox('Compare to a second station?')
             
-            if sndstat:
-                stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
-                wdata2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1M')
-
-                #ub = st.sidebar.checkbox('Apply SDM bias correction',True)
-                ub = True # simplify here and automatically apply bias correction
-
-                if ub:
-                    data2_ub = applySDM(wdata2, data, meth='abs')
-                    fig = yrplot_hm(pd.concat([wdata2.loc[wdata2.index[0]:data.index[0] - pd.Timedelta('1M')], data2_ub.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
-                else:
-                    fig = yrplot_hm(pd.concat([wdata2.loc[wdata2.index[0]:data.index[0] - pd.Timedelta('1M')], data.mean(axis=1)]), ref_yr, ag, li=2006, lang=config.lang)
-                
-                fig.update_layout(title=f"{stat2} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
-                plot_area.plotly_chart(fig, use_container_width=True)
-
         # TODO: break up this as well
         else:
+            # make the figure
             fig = yrplot_hm(sr=wdata, ref=ref_yr, ag=ag, lang=config.lang)
             fig.update_layout(title = f"{stat1} {navi_var} anomaly to {ref_yr[0]}-{ref_yr[1]}")
             plot_area.plotly_chart(fig, use_container_width=True)
-
-            # old matplotlib include
-            #plt.title(stat1 + ' ' + navi_var + ' anomaly to ' + str(ref_yr[0]) + '-' + str(ref_yr[1]))
-            #plot_area.pyplot(fig)
-
-            sndstat = st.checkbox('Compare to a second station?')
-
-            if sndstat:
-                stat2 = st.selectbox('Select second station:', [x for x in statios if x != stat1])
-                data2 = _reduce_weather_data(dataManager, name='weather', station=stat2, variable=vari, time='1M')
-
-                ref_yr2 = list(ref_yr)
-                if ref_yr2[1]<data2.index.year.min():
-                    ref_yr2[0] = data2.index.year.min()
-                    ref_yr2[1] = ref_yr2[0]+10
-                if ref_yr2[0]<data2.index.year.min():
-                    ref_yr2[0] = data2.index.year.min()
-                    if ref_yr2[1] - ref_yr2[0] < 10:
-                        ref_yr2[1] = ref_yr2[0] + 10
-
-                fig = yrplot_hm(sr=data2, ref=ref_yr2, ag=ag, lang=config.lang)
-                fig.update_layout(title=f"{stat2} {navi_var} anomaly to {ref_yr2[0]}-{ref_yr2[1]}")
-                plot_area.plotly_chart(fig, use_container_width=True)
 
 
 def quick_access_buttons(config: Config, container = st.sidebar):
