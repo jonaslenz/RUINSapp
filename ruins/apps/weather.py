@@ -90,28 +90,6 @@ _TRANSLATE_EN_INDICES = dict(
 """
 )
 
-####
-# OLD STUFF
-def applySDM(wdata, data, meth='rel', cdf_threshold=0.9999999, lower_limit=0.1):
-    '''apply structured distribution mapping to climate data and return unbiased version of dataset'''
-    data_ub = data.copy()
-
-    for k in data_ub.columns:
-        data_col = data_ub[k].dropna()
-        overlapx = pd.concat(
-            [wdata.loc[data_col.index[0]:wdata.index[-1]], data_col.loc[data_col.index[0]:wdata.index[-1]]], axis=1)
-        overlapx.columns = ['obs', 'cm']
-        overlapx = overlapx.dropna()
-        try:
-            data_ub[k] = SDM(overlapx.obs, overlapx.cm, data_col, meth, cdf_threshold, lower_limit)
-        except:
-            data_ub[k] = data_ub[k] * np.nan
-
-    data_ub[data_ub == 0.0000000] = np.nan
-    data_ub = data_ub.loc[data_ub.index[0]:pd.to_datetime('2099-12-31 23:59:59')]
-
-    return data_ub
-
 
 def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
     '''
