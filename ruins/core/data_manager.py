@@ -163,10 +163,9 @@ class DataManager(Mapping):
         if 'datafile_names' in self._config:
             # if name_or_file exists in Config.datafile_names, the filename stored there is used. Otherwise name_or_file is considered the filename.
             identifier = self._config['datafile_names'].get(name_or_file, name_or_file) # unittest
-            identifier = identifier.split('.')[0] # don't use file extension (stats.csv -> stats)
         else:
             identifier = name_or_file
-        
+
         return self.get(identifier).read()
 
     def from_config(self, datapath: str = None, cache: bool = True, hot_load: bool = False, debug: bool = False, **kwargs) -> None:
