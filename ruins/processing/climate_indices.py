@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 
 from ruins.core import DataManager
@@ -34,6 +35,7 @@ def climate_index_agg(ts, index):
         raise ValueError(f"The Index {index} is not supported. Use one of: {','.join(INDICES.keys())}")
 
 
+@st.experimental_memo
 def calculate_climate_indices(_dataManager: DataManager, station: str, variable: str, ci: str, rolling_windows=(10, 5), rolling_center=True, rcps=('rcp26', 'rcp45', 'rcp85')) -> pd.DataFrame:
     """
     Calculates all relevant climate indices for the given climate data, as configured in the DataManager.
