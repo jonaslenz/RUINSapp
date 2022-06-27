@@ -166,7 +166,7 @@ class DataManager(Mapping):
         else:
             identifier = name_or_file
 
-        return self.get(identifier).read()
+        return self[identifier].read()
 
     def from_config(self, datapath: str = None, cache: bool = True, hot_load: bool = False, debug: bool = False, **kwargs) -> None:
         """
