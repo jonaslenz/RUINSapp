@@ -40,5 +40,6 @@ def plot_climate_indices(data: pd.DataFrame, rcps=('rcp26', 'rcp45', 'rcp85'), f
         template='plotly_white',
         legend=dict(orientation='h'),
         yaxis=dict(title='Number of days'),
+        margin=dict(t=1)
     )
     return fig

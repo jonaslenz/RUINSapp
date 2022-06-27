@@ -7,12 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from plotly.express.colors import named_colorscales
 
-from ruins.plotting import plt_map, kde, yrplot_hm
+from ruins.plotting import kde, yrplot_hm, climate_projection_parcoords, plot_climate_indices
 from ruins.components import data_select, model_scale_select
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
-from ruins.plotting.climate_parcoords import climate_projection_parcoords
-from ruins.processing.sdm import SDM
+from ruins.processing import calculate_climate_indices
+from ruins.processing.climate_indices import INDICES
+
 
 
 _TRANSLATE_DE_CLIMATE = dict(
@@ -91,98 +92,33 @@ _TRANSLATE_EN_INDICES = dict(
 )
 
 
-def climate_indi(ts, indi='Summer days (Tmax ≥ 25°C)'):
-    '''
-    Calculate climate indicator days.
-    Input time series of meteorological data
-    '''
-    if pd.infer_freq(ts.index) != 'D':
-        print('Please provide daily data.')
-        return
+def climate_indices(dataManager: DataManager, config: Config, container=st, key: int = 1, **kwargs):
+    """"""
+    # make two selection columns
+    left, right = container.columns(2)
 
-    # drop NA
-    ts = ts.dropna()
+    # Station selection
+    stations = list(dataManager['weather'].read().keys())
+    station_name = left.selectbox('Station Name', options=stations, key=f'climate_station_{key}')
 
-    if indi == 'Summer days (Tmax ≥ 25°C)':  # summer days
-        return (ts.Tmax >= 25.).groupby(ts.index.year).sum()
-    elif indi == 'Ice days (Tmax < 0°C)':  # ice days
-        return (ts.Tmax < 0.).groupby(ts.index.year).sum()
-    elif indi == 'Frost days (Tmin < 0°C)':  # frost days
-        return (ts.Tmin < 0.).groupby(ts.index.year).sum()
-    elif indi == 'Hot days (Tmax ≥ 30°C)':  # hot days
-        return (ts.Tmax >= 30.).groupby(ts.index.year).sum()
-    elif indi == 'Tropic nights (Tmin ≥ 20°C)':  # tropic night
-        return (ts.Tmin >= 20.).groupby(ts.index.year).sum()
-    elif indi == 'Rainy days (Precip ≥ 1mm)':  # rainy days
-        return (ts.Prec >= 1.).groupby(ts.index.year).sum()
-    else:
-        print('Nothing calculated.')
-        return
-
-# TODO: document + signature
-# TODO: extract plotting
-def climate_indices(dataManager: DataManager, config: Config):
-    # get data
-    weather = dataManager['weather'].read()
-    climate = dataManager['cordex_coast'].read()
-
-    # get the relevant settings
-    stati = config.get('selected_station', 'coast')
-
-
-    cindi = ['Ice days (Tmax < 0°C)', 'Frost days (Tmin < 0°C)', 'Summer days (Tmax ≥ 25°C)', 'Hot days (Tmax ≥ 30°C)','Tropic nights (Tmin ≥ 20°C)', 'Rainy days (Precip ≥ 1mm)']
-    ci_topic = st.selectbox('Select Index:', cindi)
-
-    if ci_topic == 'Rainy days (Precip ≥ 1mm)':
+    # Index selection
+    ci = right.selectbox('Climate Index', options=list(INDICES.keys()), format_func= lambda k: INDICES.get(k), key=f'climate_index_{key}')
+    if ci == 'prec':
         vari = 'Prec'
-        meth = 'rel'
-    elif (ci_topic == 'Frost days (Tmin < 0°C)') | (ci_topic == 'Tropic nights (Tmin ≥ 20°C)'):
+    elif ci in ('frost', 'tropic'):
         vari = 'Tmin'
-        meth = 'abs'
     else:
         vari = 'Tmax'
-        meth = 'abs'
 
-    w1 = weather[stati].sel(vars=vari).to_dataframe()
-    w1.columns = ['bla', vari]
+    # calculate the stuff
+    data = calculate_climate_indices(dataManager, station=station_name, variable=vari, ci=ci)
 
-    fig = plt.figure(figsize=(10,2.5))
-    wi = climate_indi(w1, ci_topic).astype(int)
-    wi.plot(style='.', color='steelblue', label='Coast weather')
-    wi.rolling(10, center=True).mean().plot(color='steelblue', label='Rolling mean\n(10 years)')
+    # generate the plot
+    fig = plot_climate_indices(data)
+    container.plotly_chart(fig, use_container_width=True)
 
-    if config['include_climate']:
-        c1 = climate.sel(vars=vari).to_dataframe()
-        c1 = c1[c1.columns[c1.columns != 'vars']]
-        c2 = applySDM(w1[vari], c1, meth=meth)
-
-        firstitem = True
-        for j in c2.columns:
-            dummyt = pd.DataFrame(c2[j])
-            dummyt.columns = [vari]
-            ci = pd.DataFrame(climate_indi(dummyt, ci_topic).astype(int))
-            ci.columns = [j]
-
-            if firstitem:
-                ci[j].plot(style='.', color='gray', alpha=0.1, label='all climate projections')
-                cid = ci
-                firstitem = False
-            else:
-                ci[j].plot(style='.', color='gray', alpha=0.1, label='_')
-                cid = pd.concat([cid, ci], axis=1)
-
-        rcpx = np.array([x[-5:] for x in cid.columns.values])
-        for n in np.unique(rcpx):
-            nx = n
-            if n == np.unique(rcpx)[-1]:
-                nx = n + '\n(Rolling of 5 years)'
-            cid[cid.columns[rcpx == n]].mean(axis=1).rolling(5, center=True).mean().plot(label='Mean of ' + nx)
-
-    plt.legend(ncol=2)
-    plt.ylabel('Number of days')
-    plt.title(ci_topic)
-    st.pyplot(fig)
-
+    # TODO: fix the part below
+    return
     if ci_topic == 'Ice days (Tmax < 0°C)':
         st.markdown('''Number of days in one year which persistently remain below 0°C air temperature.''')
     elif ci_topic == 'Frost days (Tmin < 0°C)':
@@ -528,12 +464,17 @@ def climate_stage(dataManager: DataManager, config: Config):
 def indices_stage(dataManager: DataManager, config: Config, data_expander=st.sidebar):
     # Story mode - go through each setting
     # update session state with current data settings
-    data_expander = st.sidebar.expander('Data selection', expanded=True)
-    data_select.selected_station_selector(dataManager, config, expander_container=data_expander)
-    data_select.rcp_selector(dataManager, config, expander_container=data_expander)
+    # data_expander = st.sidebar.expander('Data selection', expanded=True)
+    # data_select.selected_station_selector(dataManager, config, expander_container=data_expander)
+    # data_select.rcp_selector(dataManager, config, expander_container=data_expander)
 
-    # run actual visualization
-    climate_indices(dataManager, config)
+    # build the panel
+    N = int(st.sidebar.number_input('Anzahl Abbildungen' if config.lang == 'de' else 'Number of Plots', min_value=1, max_value=10, value=1))
+
+    for i in range(N):
+        with st.expander(f'CLIMATE PLOT #{i + 1}', expanded=i == N - 1):
+            # run actual visualization
+            climate_indices(dataManager, config, key=i)
 
 
 def transition_page(config: Config) -> None:
