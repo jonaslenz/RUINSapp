@@ -15,7 +15,7 @@ BORDERS_COLORS = { # contains LOWER edges
 BORDER_NAMES = ['extreme frost', 'frost', 'cold', 'warm', 'hot', 'tropic']
 
 
-def plot_extreme_pdf(mus: float, stds: float, fig: go.Figure = None, border_colors=BORDERS_COLORS, border_names=BORDER_NAMES, x_range=(0, 25), x_res: int = 100, label_margin_scale=1.1) -> go.Figure:
+def plot_extreme_pdf(mus: float, stds: float, fig: go.Figure = None, border_colors=BORDERS_COLORS, border_names=BORDER_NAMES, x_range=(0, 25), x_res: int = 100, y_res: int = 25, label_margin_scale=1.1) -> go.Figure:
     """
     Temperature PDF shift plot.
     This function returns a plotly figure containing a heavily styled plotly PDF plot.
@@ -68,8 +68,8 @@ def plot_extreme_pdf(mus: float, stds: float, fig: go.Figure = None, border_colo
         if _y / y_max < 0.01:
             continue
     
-        # add circles - hardcoded to 25 circles at max
-        for t in np.arange(0, y_axis_max, y_axis_max / 25):
+        # add circles - with y_res circles at max
+        for t in np.arange(0, y_axis_max, y_axis_max / y_res):
             if t < _y * 0.95:
                 c_x.append(_x)
                 c_y.append(t)
