@@ -15,7 +15,7 @@ BORDERS_COLORS = { # contains LOWER edges
 BORDER_NAMES = ['extreme frost', 'frost', 'cold', 'warm', 'hot', 'tropic']
 
 
-def plot_extreme_pdf(mus: float, stds: float, fig: go.Figure = None, border_colors=BORDERS_COLORS, border_names=BORDER_NAMES, x_range=(0, 25), label_margin_scale=1.1) -> go.Figure:
+def plot_extreme_pdf(mus: float, stds: float, fig: go.Figure = None, border_colors=BORDERS_COLORS, border_names=BORDER_NAMES, x_range=(0, 25), x_res: int = 100, label_margin_scale=1.1) -> go.Figure:
     """
     Temperature PDF shift plot.
     This function returns a plotly figure containing a heavily styled plotly PDF plot.
@@ -37,7 +37,7 @@ def plot_extreme_pdf(mus: float, stds: float, fig: go.Figure = None, border_colo
         std = stds[1]
 
     # base data
-    x = np.arange(*x_range, step=(x_range[1] - x_range[0]) / 100)
+    x = np.arange(*x_range, step=(x_range[1] - x_range[0]) / x_res)
 
     # get the distributions
     y = stats.norm.pdf(x, mu, std)
