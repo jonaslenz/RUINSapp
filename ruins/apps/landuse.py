@@ -1,4 +1,7 @@
+from typing import List
+
 import streamlit as st
+from streamlit_graphic_slider import graphic_slider
 
 from ruins.core import build_config, debug_view, DataManager, Config
 
@@ -25,7 +28,7 @@ def concept_explainer(config: Config, **kwargs):
     """Show an explanation, if it was not already shown.
     """
     # check if we saw the explainer already
-    if config.has_key('land_use_explainer'):
+    if not config.get('story_mode', True) or config.has_key('landuse_step', 'intro') != 'intro':
         return
     
     # get the container and a translation function
@@ -39,32 +42,22 @@ def concept_explainer(config: Config, **kwargs):
     # check if the user wants to continue
     accept = container.button('WEITER' if config.lang == 'de' else 'CONTINUE')
     if accept:
-        st.session_state.land_use_explainer = True
+        st.session_state.landuse_step = 'pdsi'
         st.experimental_rerun()
     else:
         st.stop()
 
 
-def drought_index_plot(config:Config, **kwargs):
-    """
-    TODO: Drought index plot based on weather data.
-    """
-    # get the container and translator
-    container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
-
-    st.empty()
+def drought_index(dataManager: DataManager, config: Config) -> None:
+    """Loading Palmer drought severity index data for the region"""
+    st.title('Drought severity index')
+    st.warning('Drought severity index output is not yet implemented')
 
 
-def cropmodel(config:Config, **kwargs):
-    """
-    TODO: Yield curve based on cropmodels.
-    """
-    container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
-
-    st.empty()
-
+def crop_models(dataManager: DataManager, config: Config) -> None:
+    """Load and visualize crop model yields"""
+    st.title('Crop models')
+    st.warning('Crop model output is not yet implemented')
 
 def main_app(**kwargs):
     """
@@ -77,14 +70,23 @@ def main_app(**kwargs):
     st.set_page_config(page_title='Land use Explorer', layout=config.layout)
     debug_view.debug_view(dataManager, config, debug_name='DEBUG - initial state')
 
+    if config.get('story_mode', True):
+        step = config.get('lanuse_step', 'intro')
+    else:
+        # always go to crop models
+        step = 'crop_model'
+    
     # explainer
-    concept_explainer(config)
+    if step == 'intro':
+        concept_explainer(config)
+    elif step == 'pdsi':
+        drought_index(dataManager, config)
+    elif step == 'crop_model':
+        crop_models(dataManager, config)
+    else:
+        st.error(f"Got unknown input. Please tell the developer: landuse_step=='{step}'")
+        st.stop()
 
-    # TODO: drought stress index plot (uses weather data)
-    drought_index_plot(config)
-
-    # TODO: crop models: harvest / yield curve plot
-    cropmodel(config)
 
     # end state debug
     debug_view.debug_view(dataManager, config, debug_name='DEBUG - finished app')
