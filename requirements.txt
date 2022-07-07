@@ -11,3 +11,4 @@ sklearn
 fire
 requests
 scipy
+streamlit-graphic-slider
