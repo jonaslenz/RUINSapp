@@ -28,7 +28,7 @@ def concept_explainer(config: Config, **kwargs):
     """Show an explanation, if it was not already shown.
     """
     # check if we saw the explainer already
-    if not config.get('story_mode', True) or config.has_key('landuse_step', 'intro') != 'intro':
+    if not config.get('story_mode', True) or config.get('landuse_step', 'intro') != 'intro':
         return
     
     # get the container and a translation function
@@ -71,7 +71,7 @@ def main_app(**kwargs):
     debug_view.debug_view(dataManager, config, debug_name='DEBUG - initial state')
 
     if config.get('story_mode', True):
-        step = config.get('lanuse_step', 'intro')
+        step = config.get('landuse_step', 'intro')
     else:
         # always go to crop models
         step = 'crop_model'
