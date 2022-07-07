@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# project specific
+data.zip
+data/*
+data_legacy/*
+original_data.zip

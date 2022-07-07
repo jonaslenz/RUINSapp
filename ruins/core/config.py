@@ -42,6 +42,17 @@ class Config(Mapping):
         self.datapath = pjoin(self.basepath, 'data')
         self.hot_load = kwargs.get('hot_load', False)
 
+        # datafile names, without file extension
+        self.datafile_names = {
+            'stations': 'stats',
+            'cordex_grid': 'CORDEXgrid',
+            'cimp_grid': 'CIMP5grid',
+            'weather': 'weather',
+            'climate': 'cordex_krummh'
+            #'climate_coast': 'cordex_coast',
+            #'hydro': 'hydro_krummh'
+        }
+
         # mime readers
         self.default_sources = {
             'nc': 'HDF5Source',
@@ -54,17 +65,19 @@ class Config(Mapping):
             'stats.csv': dict(index_col=0),
             'hsim_collect.csv': dict(index_col=0),
             'windpowerx.csv': dict(index_col=0),
+            'estQ.csv': dict(index_col=[0], parse_dates=[0]),
+            'levelknock.csv': dict(index_col=[0], parse_dates=[0]),
+            'levelW.csv': dict(index_col=[0], parse_dates=[0]),
+            'prec.csv': dict(index_col=[0], parse_dates=[0]),
+            'Qknock.csv': dict(index_col=[0], parse_dates=[0]),
         }
         self.sources_args.update(kwargs.get('include_args', {}))
 
         # app management
         self.layout = 'centered'
 
-        # app content
-        self.topic_list = ['Warming', 'Weather Indices']#, 'Drought/Flood', 'Agriculture', 'Extreme Events', 'Wind Energy']
-
         # store the keys
-        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'default_sources', 'sources_args', 'layout', 'topic_list']
+        self._keys = ['debug', 'lang', 'basepath', 'datapath', 'hot_load', 'datafile_names', 'default_sources', 'sources_args', 'layout']
 
         # check if a path was provided
         conf_args = self.from_json(path) if path else {}
