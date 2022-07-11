@@ -6,3 +6,4 @@ from .climate_parcoords import climate_projection_parcoords
 from .dists import distribution_plot
 from .cordex_sunburst import sunburst
 from .distribution_shift import plot_extreme_pdf
+from .pdsi import pdsi_plot

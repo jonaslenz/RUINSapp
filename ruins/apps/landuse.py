@@ -4,6 +4,7 @@ import streamlit as st
 from streamlit_graphic_slider import graphic_slider
 
 from ruins.core import build_config, debug_view, DataManager, Config
+from ruins.plotting import pdsi, pdsi_plot
 
 
 _TRANSLATE_EN = dict(
@@ -48,16 +49,63 @@ def concept_explainer(config: Config, **kwargs):
         st.stop()
 
 
+def quick_access(config: Config, container=st.sidebar) -> None:
+    """Add quick access buttons"""
+    # get the step
+    step = config.get('landuse_step', 'intro')
+
+    # make translations
+    if config.lang == 'de':
+        lab_drought = 'Dürreindex'
+        lab_crop = 'Wuchsmodelle'
+    else:
+        lab_drought = 'Drought index'
+        lab_crop = 'Crop models'
+    
+    # build the colums
+    l, r = container.columns(2)
+
+    # switch the cases
+    if step == 'intro':
+        go_pdsi = l.button(lab_drought)
+        go_crop = r.button(lab_crop)
+    elif step == 'pdsi':
+        go_pdsi = False
+        go_crop = l.button(lab_crop)
+    elif step == 'crop_model':
+        go_pdsi = l.button(lab_drought)
+        go_crop = False
+    
+    # navigate the user
+    if go_pdsi:
+        st.session_state.landuse_step = 'pdsi'
+        st.experimental_rerun()
+    
+    if go_crop:
+        st.session_state.landuse_step = 'crop_model'
+        st.experimental_rerun()
+
+
 def drought_index(dataManager: DataManager, config: Config) -> None:
     """Loading Palmer drought severity index data for the region"""
     st.title('Drought severity index')
-    st.warning('Drought severity index output is not yet implemented')
+    
+    # add some controls
+    pdsi_exp = st.sidebar.expander('PDSI options', expanded=True)
+    group_by = st.sidebar.multiselect('GROUPING ORDER', options=['rcp', 'gcm', 'rcm'], default=['rcp', 'gcm'], format_func=lambda x: x.upper())
+    if len(group_by) == 0:
+        group_by = None
+        
+    # build the figure
+    fig = pdsi_plot(dataManager, config, group_by=group_by)
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def crop_models(dataManager: DataManager, config: Config) -> None:
     """Load and visualize crop model yields"""
     st.title('Crop models')
     st.warning('Crop model output is not yet implemented')
+
 
 def main_app(**kwargs):
     """
@@ -72,9 +120,13 @@ def main_app(**kwargs):
 
     if config.get('story_mode', True):
         step = config.get('landuse_step', 'intro')
-    else:
-        # always go to crop models
-        step = 'crop_model'
+    elif config.get('landuse_step', 'intro') == 'intro':
+        # if not in story mode, skip the intro
+        step = 'pdsi'
+    
+    # show the quick access buttons
+    quick_expander = st.sidebar.expander('QUICK ACCESS', expanded=True)
+    quick_access(config, quick_expander)
     
     # explainer
     if step == 'intro':
