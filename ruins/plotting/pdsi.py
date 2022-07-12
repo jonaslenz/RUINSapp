@@ -27,18 +27,18 @@ def pdsi_plot(data: pd.DataFrame, colorscale: str = 'RdBu', fig: go.Figure = Non
 
         # add the annotations
         for l, u, lab in zip(positions[:-1], positions[1:], labels):
-            fig.add_annotation(x=u, ax=l, y=-.03, ay=-.03, xref='x', axref='x', yref='paper', arrowside='start+end', arrowhead=2, showarrow=True, row=row, col=col)
-            fig.add_annotation(x=int(l + (u - l) / 2), y=-.1, xref='x', yref='paper', text=lab.upper(), showarrow=False, row=row, col=col)
+            fig.add_annotation(x=u, ax=l, y=-.03, ay=-.03, xref='x', axref='x', yref='paper', arrowside='start+end', arrowhead=2, showarrow=True)
+            fig.add_annotation(x=int(l + (u - l) / 2), y=-.1, xref='x', yref='paper', text=lab.upper(), showarrow=False)
 
         # remove the x-axis
-        fig.update_layout(
-            xaxis=dict(showticklabels=False, showline=False)
-        )
+        fig.update_layout(**{
+            f'xaxis{row}': dict(showticklabels=False, showline=False)
+        })
          
     # general layout
-    fig.update_layout(
-        yaxis=dict(title='Jahr' if kwargs.get('lang', 'de')=='de' else 'Year')
-    )
+    fig.update_layout(**{
+        f'yaxis{row}': dict(title='Jahr' if kwargs.get('lang', 'de')=='de' else 'Year', range=[data.index.min(), data.index.max()]),
+    })
 
     # return
     return fig

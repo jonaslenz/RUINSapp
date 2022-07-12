@@ -98,11 +98,11 @@ def drought_index(dataManager: DataManager, config: Config) -> None:
         group_by = None
     
     # load the data
-    pdsi = dataManager.read('pdsi')
+    pdsi = dataManager.read('pdsi').dropna()
 
     # build the multiindex and group
     if group_by is not None:
-        pdsi = multiindex_pdsi_data(pdsi, group_by=group_by)
+        pdsi = multiindex_pdsi_data(pdsi, grouping=group_by)
 
     # build the figure
     fig = pdsi_plot(pdsi, lang=config.lang)
