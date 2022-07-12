@@ -2,9 +2,10 @@ from typing import List
 
 import streamlit as st
 from streamlit_graphic_slider import graphic_slider
+from plotly.subplots import make_subplots
 
 from ruins.core import build_config, debug_view, DataManager, Config
-from ruins.plotting import pdsi_plot
+from ruins.plotting import pdsi_plot, tree_plot
 from ruins.processing.pdsi import multiindex_pdsi_data
 
 
@@ -86,6 +87,24 @@ def quick_access(config: Config, container=st.sidebar) -> None:
         st.session_state.landuse_step = 'crop_model'
         st.experimental_rerun()
 
+@st.experimental_memo
+def cached_pdsi_plot(_data, group_by: List[str] = None, add_tree: bool = True, lang='de'):
+        # build the multiindex and group
+    if group_by is not None:
+        _data = multiindex_pdsi_data(_data, grouping=group_by, inplace=True)
+
+        # build the figure
+        fig = make_subplots(2, 1, shared_xaxes=True, vertical_spacing=0.0, row_heights=[0.35, 0.65])
+        fig = tree_plot(_data, fig=fig, row=1, col=1)
+        fig.update_layout(height=600)
+    else:
+        fig = make_subplots(1, 1)
+
+    # run heatmap plot    
+    fig = pdsi_plot(_data, fig=fig, row=2 if group_by is not None else 1, col=1, lang=lang)
+
+    # return
+    return fig
 
 def drought_index(dataManager: DataManager, config: Config) -> None:
     """Loading Palmer drought severity index data for the region"""
@@ -100,12 +119,10 @@ def drought_index(dataManager: DataManager, config: Config) -> None:
     # load the data
     pdsi = dataManager.read('pdsi').dropna()
 
-    # build the multiindex and group
-    if group_by is not None:
-        pdsi = multiindex_pdsi_data(pdsi, grouping=group_by)
+    # use the cached version
+    fig = cached_pdsi_plot(pdsi, group_by=group_by)
 
-    # build the figure
-    fig = pdsi_plot(pdsi, lang=config.lang)
+    # add the figure
     st.plotly_chart(fig, use_container_width=True)
 
 
