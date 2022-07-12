@@ -4,7 +4,8 @@ import streamlit as st
 from streamlit_graphic_slider import graphic_slider
 
 from ruins.core import build_config, debug_view, DataManager, Config
-from ruins.plotting import pdsi, pdsi_plot
+from ruins.plotting import pdsi_plot
+from ruins.processing.pdsi import multiindex_pdsi_data
 
 
 _TRANSLATE_EN = dict(
@@ -95,9 +96,16 @@ def drought_index(dataManager: DataManager, config: Config) -> None:
     group_by = st.sidebar.multiselect('GROUPING ORDER', options=['rcp', 'gcm', 'rcm'], default=['rcp', 'gcm'], format_func=lambda x: x.upper())
     if len(group_by) == 0:
         group_by = None
-        
+    
+    # load the data
+    pdsi = dataManager.read('pdsi')
+
+    # build the multiindex and group
+    if group_by is not None:
+        pdsi = multiindex_pdsi_data(pdsi, group_by=group_by)
+
     # build the figure
-    fig = pdsi_plot(dataManager, config, group_by=group_by)
+    fig = pdsi_plot(pdsi, lang=config.lang)
     st.plotly_chart(fig, use_container_width=True)
 
 

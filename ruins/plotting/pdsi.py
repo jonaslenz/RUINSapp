@@ -4,20 +4,12 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from ruins.core import Config, DataManager
-from ruins.processing.pdsi import multiindex_pdsi_data
 
 
-def pdsi_plot(dataManager: DataManager, config: Config, group_by: List[str] = None, filters: List[str] = None, colorscale: str = 'RdBu', fig: go.Figure = None, row: int = 1, col: int = 1) -> go.Figure:
+def pdsi_plot(data: pd.DataFrame, colorscale: str = 'RdBu', fig: go.Figure = None, row: int = 1, col: int = 1, **kwargs) -> go.Figure:
     """Heatmap plot for Palmer drought severity index"""
-    # load the data
-    pdsi = dataManager.read('pdsi')
-
-    # apply grouping
-    if group_by is not None:
-        data = multiindex_pdsi_data(pdsi, grouping=group_by, inplace=False)
-    else:
-        data = pdsi
+    # check if the data has been grouped
+    is_grouped = isinstance(data.columns, pd.MultiIndex)
 
 
     # create the figure
@@ -26,7 +18,7 @@ def pdsi_plot(dataManager: DataManager, config: Config, group_by: List[str] = No
 
     fig.add_trace(go.Heatmap(y=data.index, z=data.values, colorscale=colorscale), row=row, col=col)
     
-    if group_by is not None:
+    if is_grouped:
         # extract the level
         lvl0 = data.columns.get_level_values(0)
         labels = lvl0.unique().tolist()
@@ -45,7 +37,7 @@ def pdsi_plot(dataManager: DataManager, config: Config, group_by: List[str] = No
          
     # general layout
     fig.update_layout(
-        yaxis=dict(title='Jahr' if config.lang=='de' else 'Year')
+        yaxis=dict(title='Jahr' if kwargs.get('lang', 'de')=='de' else 'Year')
     )
 
     # return
