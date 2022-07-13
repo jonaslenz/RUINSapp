@@ -239,7 +239,8 @@ def rcp_selector(dataManager: DataManager, config: Config, expander_container = 
     # check if any button was used:
     for use, rcp in use_rcp:
         if use:
-            st.session_state.include_climate = True
+            if not config.has_key('include_climate'):
+                st.session_state.include_climate = True
             st.session_state[RCP_KEY] = rcp
             st.experimental_rerun()
     
