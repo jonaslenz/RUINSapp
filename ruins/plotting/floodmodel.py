@@ -16,8 +16,8 @@ def sea_level(tide_data: pd.DataFrame, input_scale: float = 1/1000., knock_level
 
     # add knock level
     if knock_level is not None:
-        fig.add_hline(y=knock_level, name="Knock catastrophic water level", line=dict(color='red', dash='dash'), opacity=0.5)
-        fig.add_annotation(x=0.5, y=0.95, xref="x domain", yref="y domain", text="Knock catastrophic water level", showarrow=False, font=dict(color='red', size=16))
+        fig.add_hline(y=knock_level, name="0 mNHN - average sea level before sea level rise", line=dict(color='grey', dash='dash'), opacity=0.5)
+        fig.add_annotation(x=0.5, y=0.95, xref="x domain", yref="y domain", text="0 mNHN - average sea level before sea level rise", showarrow=False, font=dict(color='grey', size=16))
 
     # update layout
     fig.update_layout(**{
@@ -80,11 +80,11 @@ def absolute_water_level(hg_model_runs: list,
     
     fig.add_trace(
         go.Scatter(x=EVEx5_lw_pegel_timesliced.index, y=EVEx5_lw_pegel_timesliced, 
-                   name=r'$H_G [m] \text{(LW - observed)}$', 
+                   name=r'$H_G [m] \text{(observed)}$', 
                    line=dict(color='green')), row=row, col=col)
 
     # add canal crest
-    fig.add_hline(y=-0.9, name=r'$Canal crest H_Ü -\nregional flood$', 
+    fig.add_hline(y=-0.9, name=r'$Canal water level with first damages$', 
                   line=dict(color='red', dash='dash'), opacity=0.5, row=row, col=col)
 
     # update layout
