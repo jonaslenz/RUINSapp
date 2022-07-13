@@ -7,13 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from plotly.express.colors import named_colorscales
 
-from ruins.plotting import kde, yrplot_hm, climate_projection_parcoords, plot_climate_indices
+from ruins.plotting import kde, yrplot_hm, climate_projection_parcoords, plot_climate_indices, sunburst
 from ruins.components import data_select, model_scale_select
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
 from ruins.processing import calculate_climate_indices
 from ruins.processing.climate_indices import INDICES
-
 
 
 _TRANSLATE_DE_CLIMATE = dict(
@@ -137,7 +136,7 @@ def climate_indices(dataManager: DataManager, config: Config, container=st, key:
 @partial_memoize(hash_names=['name', 'station', 'variable', 'time', '_filter'])
 def _reduce_weather_data(dataManager: DataManager, name: str, variable: str, time: str, station: str = None, _filter: dict = None) -> pd.DataFrame:
     # get weather data
-    arr: xr.Dataset = dataManager[name].read()
+    arr: xr.Dataset = dataManager.read(name)
 
     if _filter is not None:
         arr = arr.filter_by_attrs(**_filter)
@@ -193,10 +192,10 @@ def climate_data_selector(dataManager: DataManager, config: Config, it: int = 0,
 
     # make the data sub-selection
     if ref == 'weather':
-        data = dataManager['weather'].read()
+        data = dataManager.read('weather')
         drngx = (1980, 2000)
     else:
-        data = dataManager['cordex_coast'].read()
+        data = dataManager.read('climate')
         drngx = (2050, 2070)
 
     # filter for rcps
@@ -273,7 +272,7 @@ def climate_plots(dataManager: DataManager, config: Config, expander_container =
 
 
 def warming_data_plotter(dataManager: DataManager, config: Config):
-    weather: xr.Dataset = dataManager['weather'].read()
+    weather: xr.Dataset = dataManager.read('weather')
     statios = list(weather.keys())
     stat1 = config['selected_station']
 
@@ -364,6 +363,17 @@ def warming_data_plotter(dataManager: DataManager, config: Config):
             plot_area.plotly_chart(fig, use_container_width=True)
 
 
+def inject_cordex_overview(dataManager: DataManager, expanded: bool = False):
+     with st.expander('CLIMATE MODEL OVERVIEW', expanded=expanded):
+            # laod the cordex overview data
+            overview = dataManager['cordex_overview'].read()
+
+            # build the plot
+            st.info('The Graph below groups all climate models available to RUINS into their global and regional family. Click on any element to expand it')
+            fig = sunburst(overview, maxdepth=4)
+            st.plotly_chart(fig, use_container_width=True)
+
+
 def quick_access_buttons(config: Config, container = st.sidebar):
     """Add quick access button to skip parts of the Weather explorer"""
     # get the current stage
@@ -447,6 +457,9 @@ def climate_stage(dataManager: DataManager, config: Config):
     # get model scale
     option_container = st.sidebar.expander('OPTIONS', expanded=True)
     model_scale_select.model_scale_selector(dataManager, config, expander_container=option_container)
+
+    # inject the overview
+    inject_cordex_overview(dataManager)
     
     # run main visualization
     climate_plots(dataManager, config, expander_container=option_container)
@@ -477,7 +490,7 @@ def indices_stage(dataManager: DataManager, config: Config, data_expander=st.sid
             climate_indices(dataManager, config, key=i)
 
 
-def transition_page(config: Config) -> None:
+def transition_page(dataManager: DataManager, config: Config) -> None:
     """
     This Transition is shown when the user switches from weather explorer to
     climate projections or further to climate indices, without using the quick access buttons.
@@ -494,6 +507,10 @@ def transition_page(config: Config) -> None:
     # build the page
     st.header(t('title'))
     st.markdown(t('introduction'), unsafe_allow_html=True)
+
+    # add the sunburst plot
+    if config['quick_access'] == 'transition_climate':
+        inject_cordex_overview(dataManager, expanded=True)
 
     # add continue button
     ok = st.button('WEITER' if config.lang=='de' else 'CONTINUE')
@@ -543,7 +560,7 @@ def main_app(**kwargs):
     elif stage == 'index':
         indices_stage(dataManager, config)
     elif stage.startswith('transition'):
-        transition_page(config)
+        transition_page(dataManager, config)
     else:
         st.error(f"We received weird data. A quick_access='{stage}' does not exist. Please contact the developer.")
         st.stop()

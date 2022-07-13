@@ -151,13 +151,23 @@ class DataManager(Mapping):
         """
         You can pass in a Config as kwargs.
         """
-        # check if the no config - or config without datapath - was passed
+        # check if no config - or config without datapath - was passed
         if datapath is None:
             from ruins.core import Config
             self.from_config(**Config(**kwargs))
         else:
             self.from_config(datapath=datapath, cache=cache, hot_load=hot_load, debug=debug, **kwargs)
     
+    def read(self, name_or_file: str):
+        # if config init then there is an attrribute called datafile_names
+        if 'datafile_names' in self._config:
+            # if name_or_file exists in Config.datafile_names, the filename stored there is used. Otherwise name_or_file is considered the filename.
+            identifier = self._config['datafile_names'].get(name_or_file, name_or_file) # unittest
+        else:
+            identifier = name_or_file
+
+        return self[identifier].read()
+
     def from_config(self, datapath: str = None, cache: bool = True, hot_load: bool = False, debug: bool = False, **kwargs) -> None:
         """
         Initialize the DataManager from a :class:`Config <ruins.core.Config>` object.
