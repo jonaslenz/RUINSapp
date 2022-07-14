@@ -7,3 +7,4 @@ from .dists import distribution_plot
 from .climate_indices import plot_climate_indices
 from .cordex_sunburst import sunburst
 from .distribution_shift import plot_extreme_pdf
+from .pdsi import pdsi_plot, tree_plot
