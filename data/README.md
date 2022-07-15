@@ -20,6 +20,7 @@ relvant origin and processing statements.
 * `cordex_coast.nc` - Climate model data for coastal grid cells
 * `cordex_krummh.nc` - Climate model data for grid cells in Krummhörn
 * `hydro_krummh.nc` - Hydrological, Meteorological and pumping data for Krummhörn *This file does not yet exists*
+* `scPDSI.csv` - Palmer drought severity index for climate models in `cordex_krummh.nc` 
 
 
 ## Data Origin 
