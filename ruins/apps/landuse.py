@@ -60,23 +60,28 @@ def quick_access(config: Config, container=st.sidebar) -> None:
     if config.lang == 'de':
         lab_drought = 'Dürreindex'
         lab_crop = 'Wuchsmodelle'
+        lab_wind = 'Windenergie'
     else:
         lab_drought = 'Drought index'
         lab_crop = 'Crop models'
+        lab_wind = 'Wind power'
     
     # build the colums
-    l, r = container.columns(2)
+    cols = container.columns(2 if step != 'intro' else 3)
 
     # switch the cases
     if step == 'intro':
-        go_pdsi = l.button(lab_drought)
-        go_crop = r.button(lab_crop)
+        go_pdsi = cols[0].button(lab_drought)
+        go_crop = cols[1].button(lab_crop)
+        go_wind = cols[2].button(lab_wind)
     elif step == 'pdsi':
         go_pdsi = False
-        go_crop = l.button(lab_crop)
+        go_crop = cols[0].button(lab_crop)
+        go_wind = cols[1].button(lab_wind)
     elif step == 'crop_model':
-        go_pdsi = l.button(lab_drought)
+        go_pdsi = cols[0].button(lab_drought)
         go_crop = False
+        go_wind = cols[1].button(lab_wind)
     
     # navigate the user
     if go_pdsi:
@@ -86,6 +91,11 @@ def quick_access(config: Config, container=st.sidebar) -> None:
     if go_crop:
         st.session_state.landuse_step = 'crop_model'
         st.experimental_rerun()
+
+    if go_wind:
+        st.session_state.landuse_step = 'wind'
+        st.experimental_rerun()
+
 
 @st.experimental_memo
 def cached_pdsi_plot(_data, group_by: List[str] = None, add_tree: bool = True, lang='de'):
@@ -144,6 +154,12 @@ def crop_models(dataManager: DataManager, config: Config) -> None:
     st.warning('Crop model output is not yet implemented')
 
 
+def windpower(dataManager: DataManager, config: Config) -> None:
+    """Load and visualize wind power experiments"""
+    st.title('Wind power experiments')
+    st.warning('Wind power experiments are not yet implemented')
+
+
 def main_app(**kwargs):
     """
     """
@@ -170,6 +186,8 @@ def main_app(**kwargs):
         concept_explainer(config)
     elif step == 'pdsi':
         drought_index(dataManager, config)
+    elif step == 'wind':
+        windpower(dataManager, config)
     elif step == 'crop_model':
         crop_models(dataManager, config)
     else:
