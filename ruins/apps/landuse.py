@@ -5,7 +5,7 @@ from streamlit_graphic_slider import graphic_slider
 from plotly.subplots import make_subplots
 
 from ruins.core import build_config, debug_view, DataManager, Config
-from ruins.plotting import pdsi_plot, tree_plot
+from ruins.plotting import pdsi_plot, tree_plot, variable_plot
 from ruins.processing.pdsi import multiindex_pdsi_data
 
 
@@ -82,6 +82,10 @@ def quick_access(config: Config, container=st.sidebar) -> None:
         go_pdsi = cols[0].button(lab_drought)
         go_crop = False
         go_wind = cols[1].button(lab_wind)
+    elif step == 'wind':
+        go_pdsi = cols[0].button(lab_drought)
+        go_crop = cols[1].button(lab_crop)
+        go_wind = False
     
     # navigate the user
     if go_pdsi:
@@ -154,10 +158,48 @@ def crop_models(dataManager: DataManager, config: Config) -> None:
     st.warning('Crop model output is not yet implemented')
 
 
+def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'windspeed') -> None:
+    # get the filter options
+    options = ['rcp26', 'rcp45', 'rcp85']
+    rcps = st.multiselect('Group by RCP', options=options, key=key)
+    if len(rcps) == 0:
+        rcps = None
+    
+    # get the data
+    climate = dataManager.read('climate')
+
+    # single plot
+    if rcps is None:
+        fig = variable_plot(climate, 'u2', rcp=None)
+    else:
+        colors = [('green', 'lightgreen'), ('blue', 'lightblue'), ('orange', 'yellow')]
+        fig = make_subplots(len(rcps), 1, shared_xaxes=True, vertical_spacing=0.0)
+        for i, rcp in enumerate(rcps):
+            fig = variable_plot(climate, 'u2', rcp=rcp, fig=fig, row= i + 1, color=colors[i][0], bgcolor=colors[i][1])
+            fig.update_layout(**{f'xaxis{i + 1}': dict(title='Year' if config.lang=='en' else 'Jahr')})
+    
+    # add the plot
+    fig.update_layout(legend=dict(orientation='h'))
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""
     st.title('Wind power experiments')
-    st.warning('Wind power experiments are not yet implemented')
+
+    PLOTS = dict(variable='Climate Model windspeeds')
+    
+    # add the plot controller
+    n_plots = int(st.sidebar.number_input('Number of Charts', value=1, min_value=1, max_value=5))
+
+    for i in range(n_plots):
+        with st.expander(f'Detail Chart #{i + 1}', expanded=i == n_plots - 1):
+            plt_type = st.selectbox('Chart Type', options=list(PLOTS.keys()), format_func=lambda k: PLOTS.get(k), key=f'plot_select_{i}')
+
+            # switch the plots
+            if plt_type == 'variable':
+                windspeed_rcp_plots(dataManager, config, key=f'windspeed_{i + 1}')
+
 
 
 def main_app(**kwargs):
