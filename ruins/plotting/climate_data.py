@@ -18,6 +18,7 @@ def variable_plot(climate: xr.Dataset, variable: str, rcp: str = 'rcp85', color=
         data = df[[c for c in df.columns if c.endswith(rcp)]]
     else:
         data = df
+        rcp = 'all data'
 
     # get the figure
     if fig is None:
