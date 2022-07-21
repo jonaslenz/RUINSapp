@@ -88,7 +88,7 @@ def load_windpower_data(dataManager: DataManager, joint_only=False) -> pd.DataFr
                                             names=['LMO', 'RCP', 'GCM', 'RCM', 'Ensemble', 'joint'])
 
     # tstamp index from year columns
-    tstamp = [dt.date(int(year.split('y')[1]), 12, 31) for year in raw.columns if 'y2' in year] 
+    tstamp = pd.date_range(start='2006-12-31', periods=94, freq='Y')
     
     # transpose data
     df = raw.transpose()
