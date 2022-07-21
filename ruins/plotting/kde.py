@@ -13,7 +13,7 @@ def kde(data, cmdata='none', split_ts=1, cplot=True, eq_period=True):
 
     # instantiate and fit the KDE model
     kde = KernelDensity(bandwidth=1.0, kernel='gaussian')
-    kde.fit(data[:, None])
+    kde.fit(data.to_numpy()[:, None])
 
     # score_samples returns the log of the probability density
     logprob = kde.score_samples(x_d[:, None])
@@ -30,7 +30,7 @@ def kde(data, cmdata='none', split_ts=1, cplot=True, eq_period=True):
         x_d2 = np.linspace(np.min(cmdata) * 0.9, np.max(cmdata) * 1.1, len(cmdata))
         # instantiate and fit second KDE model
         kde2 = KernelDensity(bandwidth=1.0, kernel='gaussian')
-        kde2.fit(cmdata[:, None])
+        kde2.fit(cmdata.to_numpy()[:, None])
 
         # score_samples returns the log of the probability density
         logprob2 = kde2.score_samples(x_d2[:, None])
@@ -56,7 +56,7 @@ def kde(data, cmdata='none', split_ts=1, cplot=True, eq_period=True):
             try:
                 # instantiate and fit the KDE model
                 kde = KernelDensity(bandwidth=1.0, kernel='gaussian')
-                kde.fit(datax[:, None])
+                kde.fit(datax.to_numpy()[:, None])
 
                 # score_samples returns the log of the probability density
                 logprob = kde.score_samples(x_d[:, None])
@@ -77,7 +77,7 @@ def kde(data, cmdata='none', split_ts=1, cplot=True, eq_period=True):
             try:
                 # instantiate and fit the KDE model
                 kde = KernelDensity(bandwidth=1.0, kernel='gaussian')
-                kde.fit(datax[:, None])
+                kde.fit(datax.to_numpy()[:, None])
 
                 # score_samples returns the log of the probability density
                 logprob = kde.score_samples(x_d[:, None])

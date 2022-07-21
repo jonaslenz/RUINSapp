@@ -224,7 +224,6 @@ def rcp_selector(dataManager: DataManager, config: Config, expander_container = 
         c = (col, col, col) if layout == 'columns' else col
         _dat = _VIDEO_SOURCES.get(rcp, _VIDEO_SOURCES['default'])
         
-        print(rcp)
         # video
         c[0].video(_dat['video_url'].format(rcp=rcp[-2:]))
         
