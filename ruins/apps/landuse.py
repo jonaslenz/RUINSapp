@@ -2,11 +2,13 @@ from typing import List
 
 import streamlit as st
 from streamlit_graphic_slider import graphic_slider
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from ruins.core import build_config, debug_view, DataManager, Config
-from ruins.plotting import pdsi_plot, tree_plot
+from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot
 from ruins.processing.pdsi import multiindex_pdsi_data
+from ruins.processing.windpower import upscale_windenergy, windpower_actions_projection
 
 
 _TRANSLATE_EN = dict(
@@ -18,12 +20,37 @@ _TRANSLATE_EN = dict(
 """
 )
 
+_TRANSLATE_WIND_EN = dict(
+    title_dim="Dimensioning a wind turbine",
+    description_dim="""Introducing the example how wind turbines are dimensioned
+""",
+    title_upscale="Upscale to Krummhörn",
+    description_upscale="""In this example you can balance out the three kinds of turbines,
+E53, E115 and E126 to compare them in terms of number of turbines and total installed capacity.
+See also, how the chosen specification will perform in the future using the most recent
+climate models for the region.
+"""
+)
+
 _TRANSLATE_DE = dict(
     title='Landnutzung, Klimawandel und Unsicherheiten',
     introduction="""
     In diesem Abschnitt stellen wir Visualisierungen zur Verfügung, um die Auswirkungen des Klimawandels auf die 
     Erträge verschiedener Kulturpflanzen und die Unsicherheit dieser Auswirkungen zu bewerten. 
     Unter diesen Ungewissheiten müssen Landwirte Entscheidungen treffen, die ihrerseits mit Ungewissheit verbunden sind.
+"""
+)
+
+_TRANSLATE_WIND_DE = dict(
+    title_dim="Dimensioniere eine Windkraftanlage",
+    description_dim="""Einführung in die Dimensionierung eines Windkraftparks
+""",
+    title_upscale="Ein Windpark für die Krummhörn",
+    description_upscale="""In diesem Beispiel kannst du einen Windpark für die Krummhörn planen,
+indem du die drei Windkraftanlagen E53, E115 und E126 ausbalancierst. Untersuche, wie sich die 
+Aufteilung auf die Gesamtanzahl an WIndkraftanlagen und die gesamte Nennleistung auswirkt.
+Zusätzlich stehen moderne Klimamodelle für die Region zur Verfügung, um die Leistungsfähigkeit des
+Windparks in Zukunft zu bewerten.
 """
 )
 
@@ -82,6 +109,10 @@ def quick_access(config: Config, container=st.sidebar) -> None:
         go_pdsi = cols[0].button(lab_drought)
         go_crop = False
         go_wind = cols[1].button(lab_wind)
+    elif step == 'wind':
+        go_pdsi = cols[0].button(lab_drought)
+        go_crop = cols[1].button(lab_crop)
+        go_wind = False
     
     # navigate the user
     if go_pdsi:
@@ -154,10 +185,191 @@ def crop_models(dataManager: DataManager, config: Config) -> None:
     st.warning('Crop model output is not yet implemented')
 
 
+def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'windspeed') -> None:
+    # get the filter options
+    options = ['rcp26', 'rcp45', 'rcp85']
+    rcps = st.multiselect('Group by RCP', options=options, key=key)
+    if len(rcps) == 0:
+        rcps = None
+    
+    # get the data
+    climate = dataManager.read('climate')
+
+    # single plot
+    if rcps is None:
+        fig = variable_plot(climate, 'u2', rcp=None)
+    else:
+        colors = [('green', 'lightgreen'), ('blue', 'lightblue'), ('orange', 'yellow')]
+        fig = make_subplots(len(rcps), 1, shared_xaxes=True, vertical_spacing=0.0)
+        for i, rcp in enumerate(rcps):
+            fig = variable_plot(climate, 'u2', rcp=rcp, fig=fig, row= i + 1, color=colors[i][0], bgcolor=colors[i][1])
+        fig.update_layout(**{f'xaxis{i + 1}': dict(title='Year' if config.lang=='en' else 'Jahr'), 'height': 600})
+    
+    # add the plot
+    fig.update_layout(legend=dict(orientation='h'), template='plotly_white')
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def wind_turbine_dimensions(config: Config):
+    """Let the user play with some wind turbine dimensioning"""
+    # get a translator
+    t = config.translator(de=_TRANSLATE_WIND_DE, en=_TRANSLATE_WIND_EN)
+
+    # set the introduction
+    st.title(t('title_dim'))
+    st.markdown(t('description_dim'))
+
+    # build the columns
+    mets = st.columns(3)
+    l, r = st.columns(2)
+    l.info('Use the Form below to check out how the turbines dimensions change the footprint of each wind turbine.')
+
+    # check if there are already specs
+    specs = config.get('wind_dim_specs', [])
+
+    # add the form
+    with l.expander('Dimensions' if config.lang=='en' else 'Dimensionierung', expanded=True):
+        mw = st.number_input(
+            'rated power  production [MW]' if config.lang=='en' else 'Nennleistung [MW]',
+            value=0.8,
+            min_value=0.0,
+            max_value=100.0
+        )
+        dia = st.number_input('Rotor diameter [m]' if config.lang=='en' else 'Rotordurchmesser [m]', value=53, min_value=1, max_value=250)
+        
+        # calculate the dimensions
+        area = (5* dia * 3* dia) / 10000
+        n_turbines = int(396. / area)
+        prod = mw * n_turbines
+
+        # add the metric
+        mets[0].metric('Turbines [N]', value=n_turbines)
+        mets[1].metric('Installed power [MW]', value=prod)
+        mets[2].metric('Area / turbine [ha]', value=area)
+
+        add = st.button('Add to plot' if config.lang=='en' else 'Zur Abbildung hinzufügen')
+
+        if add:
+            specs.append((prod, n_turbines))
+            st.session_state.wind_dim_specs = specs
+            st.experimental_rerun()
+
+    # Create the plot
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=[_[1] for _ in specs], y=[_[0] for _ in specs], mode='markers', name='User defined turbines'))
+    for d, name in zip([(74.4, 93), (57, 19), (120, 16)], ['E53', 'E115', 'E126']):
+        fig.add_trace(go.Scatter(x=[d[1]], y=[d[0]], mode='markers', name=name))
+    fig.update_layout(xaxis=dict(title='Number of Turbines [N]'), yaxis=dict(title='Installed power [MW]'), legend=dict(orientation='h'))
+    r.plotly_chart(fig, use_container_width=True)
+
+    st.markdown('<hr style="margin-top: 3rem; margin-bottom: 3rem;">', unsafe_allow_html=True)
+    st.info('Once you got the idea how wind turbines are scaled to the Krummhörn region, we can continue to plan the wind farm based of three different turbines.')
+    finish = st.button('CONTINUE' if config.lang=='en' else 'WEITER')
+    if finish:
+        st.session_state.windpower_stage = 'upscale'
+        st.experimental_rerun()
+
+
+def upscale_windpower(dataManager: DataManager, config: Config) -> None:        
+    """Play with upscaling options to see how the wind farm will perform in the future"""
+    # get a translator
+    t = config.translator(de=_TRANSLATE_WIND_DE, en=_TRANSLATE_WIND_EN)
+
+    # intro
+    st.title(t('title_upscale'))
+    st.markdown(t('description_upscale'))
+
+    # collect the background images for turbins
+    imgs = [
+        'https://upload.wikimedia.org/wikipedia/commons/b/b6/Enercon_E53.JPG',
+        'https://upload.wikimedia.org/wikipedia/commons/8/88/ENERCON_E-115_Gondel.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/3/31/ENERCON_E-126_EP4_im_Windpark_Holdorf.jpg'
+    ]
+    attributions = [
+        '<a href="https://commons.wikimedia.org/wiki/File:Enercon_E53.JPG">Joseph-Evan-Capelli</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0">CC BY-SA 3.0</a>, via Wikimedia Commons',
+        '<a href="https://commons.wikimedia.org/wiki/File:ENERCON_E-115_Gondel.jpg">Adl252</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons',
+        '<a href="https://commons.wikimedia.org/wiki/File:ENERCON_E-126_EP4_im_Windpark_Holdorf.jpg">Adl252</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons'
+    ]
+
+    # create options above the image sources
+    opts_container = st.sidebar.container()
+
+    # add the attributions
+    with st.sidebar.expander('Image sources', expanded=False):
+        for attr, name in zip(attributions, ['E53', 'E115', 'E126']):
+            st.markdown(f'<small><strong>{name}</strong> - {attr}</small>', unsafe_allow_html=True)
+    
+    # first add the container for the plots
+    plot_area = st.container()
+
+    # add the slider
+    specs = graphic_slider([33, 33], images=imgs)
+
+    # by default, the slider returns only the default if not used once
+    if len(specs) == 2:
+        specs.append(100 - specs[0] - specs[1])
+
+    cols = st.columns(specs)
+    for c, s, name in zip(cols, specs, ['E53', 'E115', 'E126']):
+        c.markdown(f'<strong style="font-size: 120%">{name}: {s}%</strong>', unsafe_allow_html=True)
+    specs = [tuple([_ / 100 for _ in specs])]
+
+    # create the options
+    with opts_container.expander('Filter Options', expanded=True):
+        all_rcps = st.checkbox('Aggregate all RCPs', value=True)
+        rcp26 = st.checkbox('Add RCP 2.6 only', value=False)
+        rcp45 = st.checkbox('Add RCP 4.5 only', value=False)
+        rcp85 = st.checkbox('Add RCP 8.5 only', value=False)
+    
+    # sorry, this is ugly...
+    filt_opts = [opt for use, opt in zip([all_rcps, rcp26, rcp45, rcp85], [{}, {'rcp': 'rcp26'}, {'rcp': 'rcp45'}, {'rcp': 'rcp85'}]) if use]
+    names = [n for use, n in zip([all_rcps, rcp26, rcp45, rcp85], ['All RCPs', 'RCP 2.6', 'RCP 4.5', 'RCP 8.5']) if use]
+
+    # add the plot
+    # go for each filter option
+    data = []
+    for filt in filt_opts:
+        data.extend(windpower_actions_projection(dataManager, specs, filter_=filt))
+
+    # show the plot
+    fig = windpower_distplot(data, fill='tozeroy', names=names, showlegend=True)
+
+    fig.update_layout(xaxis=dict(title='Annual wind power [MW]'), legend=dict(orientation='h'))
+    plot_area.plotly_chart(fig, use_container_width=True)
+
+    for d in data:
+        st.table(d.sum())
+
 def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""
     st.title('Wind power experiments')
-    st.warning('Wind power experiments are not yet implemented')
+
+    PLOTS = dict(variable='Climate Model windspeeds')
+    
+    # add the plot controller
+    n_plots = int(st.sidebar.number_input('Number of Charts', value=1, min_value=1, max_value=5))
+
+    for i in range(n_plots):
+        with st.expander(f'Detail Chart #{i + 1}', expanded=i == n_plots - 1):
+            plt_type = st.selectbox('Chart Type', options=list(PLOTS.keys()), format_func=lambda k: PLOTS.get(k), key=f'plot_select_{i}')
+
+            # switch the plots
+            if plt_type == 'variable':
+                windspeed_rcp_plots(dataManager, config, key=f'windspeed_{i + 1}')
+
+
+def windpower_story(dataManager: DataManager, config: Config) -> None:
+    """Guide the user through the windpower landuse example"""
+    stage = config.get('windpower_stage', 'turbines')
+
+    if stage == 'turbines':
+        wind_turbine_dimensions(config)
+    
+    elif stage == 'upscale':
+        upscale_windpower(dataManager, config)
+
+    elif stage == 'final':
+        windpower(dataManager=dataManager, config=config)
 
 
 def main_app(**kwargs):
@@ -187,7 +399,7 @@ def main_app(**kwargs):
     elif step == 'pdsi':
         drought_index(dataManager, config)
     elif step == 'wind':
-        windpower(dataManager, config)
+        windpower_story(dataManager, config)
     elif step == 'crop_model':
         crop_models(dataManager, config)
     else:
