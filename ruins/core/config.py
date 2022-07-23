@@ -50,6 +50,7 @@ class Config(Mapping):
             'weather': 'weather',
             'climate': 'cordex_krummh',
             'pdsi': 'scPDSI',
+            'wind_timeseries': 'windenergy_timeseries_2022_06_19'
             #'climate_coast': 'cordex_coast',
             #'hydro': 'hydro_krummh'
         }
@@ -58,6 +59,7 @@ class Config(Mapping):
         self.default_sources = {
             'nc': 'HDF5Source',
             'csv': 'CSVSource',
+            'dat': 'CSVSource'
         }
         self.default_sources.update(kwargs.get('include_mimes', {}))
 
@@ -72,6 +74,7 @@ class Config(Mapping):
             'prec.csv': dict(index_col=[0], parse_dates=[0]),
             'Qknock.csv': dict(index_col=[0], parse_dates=[0]),
             'scPDSI.csv': dict(index_col=[0]),
+            'windenergy_timeseries_2022_06_19.dat': dict(sep=' ')
         }
         self.sources_args.update(kwargs.get('include_args', {}))
 

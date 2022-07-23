@@ -73,34 +73,48 @@ def upscale_windenergy(turbines: List[Union[str, Tuple[float, int]]], specs: Lis
     return results
 
 
-def load_windpower_data(dataManager: DataManager) -> pd.DataFrame:
-    """Load the raw windpower simulations and apply a MultiIndex"""
-    raw = dataManager['windpower_WBL'].read().copy()
+def load_windpower_data(dataManager: DataManager, joint_only=False) -> pd.DataFrame:
+    """
+    Load the raw windpower simulations and apply a MultiIndex
     
-    # set the index
-    if 'time' in raw.columns:
-        raw.set_index('time', inplace=True)
+    joint_only : bool
+        If True, only data for 16 joint simulations are returned (combinations of global circulation 
+        model (GCM), regional climate model (RCM) and ensemble available for all three RCPs).
+    """
+    
+    # read windpower timeseries data
+    raw = dataManager.read('wind_timeseries').copy()
 
-    # build the multiindex
-    # get the chunks
-    c_chunks = [c.replace('_', '.').split('.') for c in raw.columns]
+    # build the MultiIndex
+    multi_index = pd.MultiIndex.from_tuples(
+        list(zip(raw['LMO'], raw['RCP'], raw['GCM'], raw['RCM'], raw['Ensemble'], raw['joint'])), 
+        names=['LMO', 'RCP', 'GCM', 'RCM', 'Ensemble', 'joint']
+    )
 
-    # extract the level labels
-    gcms = [c[0] if len(c)==6 else c[1] for c in c_chunks]
-    rcps = [c[-2] for c in c_chunks]
-    rcms = [c[2] for c in c_chunks]
-    lmos = [c[-1] for c in c_chunks]
+    # tstamp index from year columns
+    tstamp = pd.date_range(start='2006-12-31', periods=94, freq='Y')
+    
+    # transpose data
+    df = raw.transpose()
 
-    # build the index
-    index = pd.MultiIndex.from_tuples(list(zip(lmos, rcps, gcms, rcms, raw.columns.values)))
+    # apply multiindex
+    df.columns = multi_index
 
-    # apply the index
-    raw.columns = index
+    # drop multiindex rows
+    df.drop(df.index[0:6], axis=0, inplace=True)
+
+    # replace index
+    df.index = tstamp
+    df.index.name = 'time'
 
     # drop na values
-    raw.dropna(axis=1, how='all', inplace=True)
+    df.dropna(axis=1, how='all', inplace=True)
 
-    return raw
+    if joint_only:
+        # only return columns where joint==True
+        return df.drop(False, level=5, axis=1)
+    else:
+        return df
 
 
 def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> List[pd.DataFrame]:
@@ -127,7 +141,7 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
     power_share = upscale_windenergy(turbines, scenarios)
 
     # get the data
-    df = load_windpower_data(dataManager)
+    df = load_windpower_data(dataManager, joint_only=filter_.get('joint', False))
 
     # apply filters
     for key, val in filter_.items():
@@ -159,3 +173,4 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
         actions.append(data)
 
     return actions
+
