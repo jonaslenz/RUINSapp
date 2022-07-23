@@ -1,4 +1,6 @@
 from typing import Union, Tuple, List
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -99,3 +101,61 @@ def load_windpower_data(dataManager: DataManager) -> pd.DataFrame:
     raw.dropna(axis=1, how='all', inplace=True)
 
     return raw
+
+
+def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> List[pd.DataFrame]:
+    """
+    """
+    # ignore MultiIndex sorting warnings as the df is small anyway
+    warnings.simplefilter('ignore', category=pd.errors.PerformanceWarning) 
+    
+    # I guess we have to stick to those here
+    turbines=['e53', 'e115', 'e126']
+
+    # handle the specs
+    if len(specs) == 1 and any([isinstance(s, range) for s in specs]):
+        # there is a range definition
+        scenarios = []
+        for e1 in specs[0]:
+            for e2 in specs[1]:
+                for e3 in specs[2]:
+                    scenarios.append((e1 / 100, e2 / 100, e3 / 100))
+    else:
+        scenarios = specs
+
+    # upscale the turbines to the site
+    power_share = upscale_windenergy(turbines, scenarios)
+
+    # get the data
+    df = load_windpower_data(dataManager)
+
+    # apply filters
+    for key, val in filter_.items():
+        if key == 'year':
+            df = df[val]
+        elif key == 'rcp':
+            df = df.xs(val, level=1, axis=1)
+        elif key == 'gcm':
+            df = df.xs(val, level=2, axis=1)
+
+    # aggregate everything
+    actions = []
+    for i in range(0, len(power_share), len(turbines)):
+        data = None
+        for j, turbine in enumerate(turbines):
+            # get the chunk for this turbine
+            chunk = df[turbine.upper(), ].mean(axis=1)  # this is the part I am not sure about
+
+            # multiply with the number of turbines
+            chunk *= power_share[i + j][0]
+
+            # merge
+            if data is None:
+                data = pd.DataFrame(data={turbine: chunk.values}, index=chunk.index)
+                #data = chunk
+            else:
+                #data = pd.merge(data, chunk, left_index=True, right_index=True, how='outer')
+                data[turbine] = chunk.values
+        actions.append(data)
+
+    return actions
