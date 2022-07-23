@@ -125,6 +125,29 @@ class CSVSource(FileSource):
         return pd.read_csv(self.path, **pandas_args)
 
 
+class DATSource(FileSource):
+    """
+    DAT file source. This class is used to load .dat files
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # inspect read_csv to learn about allowed params
+        sig = inspect.signature(pd.read_csv)
+        self.pandas_params = list(sig.parameters.keys())
+
+    def _load_source(self):
+        # extract pandas args
+        pandas_args = {k: v for k, v in self._kwargs.items() if k in self.pandas_params}
+
+        # set the separator to \s+ as usually used for .dat
+        if 'sep' not in pandas_args:
+            pandas_args['sep'] = '\s+'
+        
+        # load data
+        return pd.read_csv(self.path, **pandas_args)
+
+
 class DataManager(Mapping):
     """Main class for accessing different data sources.
 
