@@ -149,7 +149,7 @@ def run_streamlit():
     with st.sidebar.expander("Event selection"):
         time = st.radio(
             "Event",
-            ("2012", "2017")    # reduced to 2 nice events -> "custom period" only in expert mode or for self hosting users?
+            ("2012", "2017", "choose custom period")    # reduced to 2 nice events -> "custom period" only in expert mode or for self hosting users?
         )
         if time == 'choose custom period':
             t1 = st.date_input("start", datetime.date(2017, 12, 1))
@@ -214,7 +214,7 @@ def run_streamlit():
         fig2 = floodmodel.absolute_water_level(hg_model_runs, EVEx5_lw_pegel_timesliced, fig=fig2, row=1, col=1)
         fig2 = floodmodel.pump_capacity(hg_model_runs, pump_capacity_observed, cumsum=False, fig=fig2, row=2, col=1)
         st.plotly_chart(fig2, use_container_width=True)
-        
+
 
 if __name__ == '__main__':
     run_streamlit()
