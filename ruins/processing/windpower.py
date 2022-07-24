@@ -117,7 +117,7 @@ def load_windpower_data(dataManager: DataManager, joint_only=False) -> pd.DataFr
         return df
 
 
-def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> List[pd.DataFrame]:
+def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> Tuple[List[pd.DataFrame], List[Tuple[int, float]]]:
     """
     """
     # ignore MultiIndex sorting warnings as the df is small anyway
@@ -154,6 +154,7 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
 
     # aggregate everything
     actions = []
+    dims = []
     for i in range(0, len(power_share), len(turbines)):
         data = None
         for j, turbine in enumerate(turbines):
@@ -172,5 +173,5 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
                 data[turbine] = chunk.values
         actions.append(data)
 
-    return actions
+    return actions, dims
 

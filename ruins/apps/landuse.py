@@ -225,18 +225,20 @@ def wind_turbine_dimensions(config: Config):
     l.info('Use the Form below to check out how the turbines dimensions change the footprint of each wind turbine.')
 
     # check if there are already specs
-    specs = config.get('wind_dim_specs', [])
+    # specs = config.get('wind_dim_specs', [])
 
     # add the form
     with l.expander('Dimensions' if config.lang=='en' else 'Dimensionierung', expanded=True):
-        mw = st.number_input(
-            'rated power  production [MW]' if config.lang=='en' else 'Nennleistung [MW]',
-            value=0.8,
-            min_value=0.0,
-            max_value=100.0
-        )
-        dia = st.number_input('Rotor diameter [m]' if config.lang=='en' else 'Rotordurchmesser [m]', value=53, min_value=1, max_value=250)
-        
+        # mw = st.number_input(
+        #     'rated power  production [MW]' if config.lang=='en' else 'Nennleistung [MW]',
+        #     value=0.8,
+        #     min_value=0.0,
+        #     max_value=100.0
+        # )
+        # dia = st.number_input('Rotor diameter [m]' if config.lang=='en' else 'Rotordurchmesser [m]', value=53, min_value=1, max_value=250)
+        mw = st.slider('Rated power production [MW]', min_value=0.0, max_value=25.0, value=1.4)
+        dia = st.slider('Rotor diameter [m]', min_value=1, max_value=200, value=64)
+
         # calculate the dimensions
         area = (5* dia * 3* dia) / 10000
         n_turbines = int(396. / area)
@@ -247,18 +249,27 @@ def wind_turbine_dimensions(config: Config):
         mets[1].metric('Installed power [MW]', value=prod)
         mets[2].metric('Area / turbine [ha]', value=area)
 
-        add = st.button('Add to plot' if config.lang=='en' else 'Zur Abbildung hinzufügen')
+        # add = st.button('Add to plot' if config.lang=='en' else 'Zur Abbildung hinzufügen')
 
-        if add:
-            specs.append((prod, n_turbines))
-            st.session_state.wind_dim_specs = specs
-            st.experimental_rerun()
+        # if add:
+        #     specs.append((prod, n_turbines))
+        #     st.session_state.wind_dim_specs = specs
+        #     st.experimental_rerun()
 
     # Create the plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=[_[1] for _ in specs], y=[_[0] for _ in specs], mode='markers', name='User defined turbines'))
-    for d, name in zip([(74.4, 93), (57, 19), (120, 16)], ['E53', 'E115', 'E126']):
-        fig.add_trace(go.Scatter(x=[d[1]], y=[d[0]], mode='markers', name=name))
+    #fig.add_trace(go.Scatter(x=[_[1] for _ in specs], y=[_[0] for _ in specs], mode='markers', name='User defined turbines'))
+    fig.add_trace(
+        go.Scatter(x=[n_turbines], y=[prod], mode='markers', marker=dict(color='purple', size=35, opacity=0.8), name='User defined turbines')
+    )
+
+    # add all scenarios
+    for d, name, color in zip([(74.4, 93), (57, 19), (120, 16)], ['E53', 'E115', 'E126'], ['orange', 'green', 'blue']):
+        fig.add_trace(
+            go.Scatter(x=[d[1]], y=[d[0]], mode='markers+text', text=name, marker=dict(color=color, size=30, opacity=0.3), name=name)
+        )
+    
+    # add figure
     fig.update_layout(xaxis=dict(title='Number of Turbines [N]'), yaxis=dict(title='Installed power [MW]'), legend=dict(orientation='h'))
     r.plotly_chart(fig, use_container_width=True)
 
@@ -328,8 +339,13 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
     # add the plot
     # go for each filter option
     data = []
+    dims = []
     for filt in filt_opts:
-        data.extend(windpower_actions_projection(dataManager, specs, filter_=filt))
+        _dat, _dim = windpower_actions_projection(dataManager, specs, filter_=filt)
+        data.extend(_dat)
+        dims.extend(_dim)
+
+    metric_container = plot_area.columns(len(data))
 
     # show the plot
     fig = windpower_distplot(data, fill='tozeroy', names=names, showlegend=True)
@@ -337,8 +353,8 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
     fig.update_layout(xaxis=dict(title='Annual wind power [MW]'), legend=dict(orientation='h'))
     plot_area.plotly_chart(fig, use_container_width=True)
 
-    for d in data:
-        st.table(d.sum())
+    for d, col in zip(data, metric_container):
+        col.metric('Total Annual Production', d.sum().sum())
 
 def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""
