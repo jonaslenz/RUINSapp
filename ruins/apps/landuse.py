@@ -344,8 +344,9 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
         _dat, _dim = windpower_actions_projection(dataManager, specs, filter_=filt)
         data.extend(_dat)
         dims.extend(_dim)
-
-    metric_container = plot_area.columns(len(data))
+    
+    metric_exp = plot_area.expander('Statistics', expanded=True)
+    metric_container = metric_exp.columns(len(data))
 
     # show the plot
     fig = windpower_distplot(data, fill='tozeroy', names=names, showlegend=True)
@@ -353,8 +354,11 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
     fig.update_layout(xaxis=dict(title='Annual wind power [MW]'), legend=dict(orientation='h'))
     plot_area.plotly_chart(fig, use_container_width=True)
 
-    for d, col in zip(data, metric_container):
-        col.metric('Total Annual Production', d.sum().sum())
+    for d, dim, name,  col in zip(data, dims, names, metric_container):
+        col.markdown(f'#### {name}')
+        col.metric('Annual Production [GW]', int(d.mean().sum() / 1000))
+        col.metric('Turbines [N]', int(sum(dim)))
+
 
 def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""

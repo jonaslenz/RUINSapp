@@ -157,6 +157,7 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
     dims = []
     for i in range(0, len(power_share), len(turbines)):
         data = None
+        dim = []
         for j, turbine in enumerate(turbines):
             # get the chunk for this turbine
             chunk = df[turbine.upper(), ].mean(axis=1)  # this is the part I am not sure about
@@ -164,6 +165,8 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
             # multiply with the number of turbines
             chunk *= power_share[i + j][0]
 
+            # append the number of turbines
+            dim.append(power_share[i + j][0])
             # merge
             if data is None:
                 data = pd.DataFrame(data={turbine: chunk.values}, index=chunk.index)
@@ -171,7 +174,10 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
             else:
                 #data = pd.merge(data, chunk, left_index=True, right_index=True, how='outer')
                 data[turbine] = chunk.values
+        
+        # append the data
         actions.append(data)
+        dims.append(dim)
 
     return actions, dims
 
