@@ -138,7 +138,8 @@ def run_streamlit():
 
     config, dataManager = build_config()
 
-    st.set_page_config(layout="centered")
+    #st.set_page_config(layout="centered")
+    st.set_page_config(layout="wide")
     st.title('RUINS - short term inland flood forecast')
     st.sidebar.header('Control Panel')
 
@@ -200,18 +201,22 @@ def run_streamlit():
 
     # plotting:
 
-    fig = make_subplots(2, 2)
+    col1, col2 = st.columns(2)
 
-    fig = floodmodel.sea_level(tide_data=tide, knock_level=6.5, fig=fig, row=1, col=1)
-    fig = floodmodel.canal_recharge(recharge_data=hourly_recharge, cumsum=False, fig=fig, row=2, col=1)
-    fig = floodmodel.absolute_water_level(hg_model_runs, EVEx5_lw_pegel_timesliced, fig=fig, row=1, col=2)
-    fig = floodmodel.pump_capacity(hg_model_runs, pump_capacity_observed, cumsum=False, fig=fig, row=2, col=2)
+    with col1:
+        fig1 = make_subplots(2, 1)
+        fig1 = floodmodel.sea_level(tide_data=tide, knock_level=6.5, fig=fig1, row=1, col=1)
+        fig1 = floodmodel.canal_recharge(recharge_data=hourly_recharge, cumsum=False, fig=fig1, row=2, col=1)
+        st.plotly_chart(fig1, use_container_width=True)   
+    
+    with col2:
+        fig2 = make_subplots(2, 1)
+        fig2 = floodmodel.absolute_water_level(hg_model_runs, EVEx5_lw_pegel_timesliced, fig=fig2, row=1, col=1)
+        fig2 = floodmodel.pump_capacity(hg_model_runs, pump_capacity_observed, cumsum=False, fig=fig2, row=2, col=1)
+        st.plotly_chart(fig2, use_container_width=True)
+        
 
-    plot_area = st.empty()
-    plot_area.plotly_chart(fig, use_container_width=True)   
-
-
-if __name__ is '__main__':
+if __name__ == '__main__':
     run_streamlit()
 
 
