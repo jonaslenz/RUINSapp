@@ -68,7 +68,7 @@ def upscale_windenergy(turbines: List[Union[str, Tuple[float, int]]], specs: Lis
             used_area = n_turbines * area
             used_mw = n_turbines * mw
 
-            results[i * len(specs) + j,:] = [n_turbines, used_area, used_mw]
+            results[i * len(turbines) + j,:] = [n_turbines, used_area, used_mw]
 
     return results
 
