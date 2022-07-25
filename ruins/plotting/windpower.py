@@ -1,6 +1,7 @@
 from typing import List, Union
 
 import numpy as np
+from numpy.linalg import LinAlgError
 import pandas as pd
 from scipy.stats import gaussian_kde
 import plotly.graph_objects as go
@@ -38,11 +39,18 @@ def windpower_distplot(
     for i, (action, show, name, color) in enumerate(zip(actions, showlegend, names, colors)):
         y = action.sum(axis=1).values
         x = np.linspace(y.min(), y.max(), 100)
-        kde = gaussian_kde(y)(x)
 
-        fig.add_trace(
-            go.Scatter(x=x, y=kde, mode='lines', line=dict(color=color, width=0. if fill is not None else 1), name=name, fill=fill, showlegend=show),
-            col=col, row=row
-        )
+        # make sure there is no singular matrix (possibly only zeros passed)
+        try:
+            kde = gaussian_kde(y)(x)
+
+            fig.add_trace(
+                go.Scatter(x=x, y=kde, mode='lines', line=dict(color=color, width=0. if fill is not None else 1), name=name, fill=fill, showlegend=show),
+                col=col, row=row
+            )
+        except LinAlgError as e:
+            # do nothing?  Warning?
+            pass
+
 
     return fig

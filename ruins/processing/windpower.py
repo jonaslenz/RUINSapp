@@ -68,7 +68,7 @@ def upscale_windenergy(turbines: List[Union[str, Tuple[float, int]]], specs: Lis
             used_area = n_turbines * area
             used_mw = n_turbines * mw
 
-            results[i * len(specs) + j,:] = [n_turbines, used_area, used_mw]
+            results[i * len(turbines) + j,:] = [n_turbines, used_area, used_mw]
 
     return results
 
@@ -117,7 +117,7 @@ def load_windpower_data(dataManager: DataManager, joint_only=False) -> pd.DataFr
         return df
 
 
-def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> List[pd.DataFrame]:
+def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> Tuple[List[pd.DataFrame], List[Tuple[int, float]]]:
     """
     """
     # ignore MultiIndex sorting warnings as the df is small anyway
@@ -143,19 +143,35 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
     # get the data
     df = load_windpower_data(dataManager, joint_only=filter_.get('joint', False))
 
+    # set the filter keys
+    gcm_level = 2
+    rcm_level = 3
     # apply filters
     for key, val in filter_.items():
         if key == 'year':
             df = df[val]
         elif key == 'rcp':
             df = df.xs(val, level=1, axis=1)
+
+            # Multiindex has one level less
+            gcm_level -= 1
+            rcm_level -= 1
+
         elif key == 'gcm':
-            df = df.xs(val, level=2, axis=1)
+            df = df.xs(val, level=gcm_level, axis=1)
+
+            # Multiindex has one level less
+            rcm_level -= 1
+        
+        elif key == 'rcm':
+            df = df.xs(val, level=rcm_level, axis=1)
 
     # aggregate everything
     actions = []
+    dims = []
     for i in range(0, len(power_share), len(turbines)):
         data = None
+        dim = []
         for j, turbine in enumerate(turbines):
             # get the chunk for this turbine
             chunk = df[turbine.upper(), ].mean(axis=1)  # this is the part I am not sure about
@@ -163,6 +179,8 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
             # multiply with the number of turbines
             chunk *= power_share[i + j][0]
 
+            # append the number of turbines
+            dim.append(power_share[i + j][0])
             # merge
             if data is None:
                 data = pd.DataFrame(data={turbine: chunk.values}, index=chunk.index)
@@ -170,7 +188,10 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
             else:
                 #data = pd.merge(data, chunk, left_index=True, right_index=True, how='outer')
                 data[turbine] = chunk.values
+        
+        # append the data
         actions.append(data)
+        dims.append(dim)
 
-    return actions
+    return actions, dims
 

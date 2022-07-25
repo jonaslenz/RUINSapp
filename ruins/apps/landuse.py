@@ -1,9 +1,11 @@
 from typing import List
+from itertools import product
 
 import streamlit as st
 from streamlit_graphic_slider import graphic_slider
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import numpy as np
 
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot
@@ -210,6 +212,69 @@ def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'wi
     st.plotly_chart(fig, use_container_width=True)
 
 
+def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = False, key: str = 'upscale') -> None:
+    """Show dist-plots for provisioned windpower in Krummhörn along with many filter options"""
+    # create the layout
+    left, right = st.columns((4, 6))
+    left.markdown('##### Options')
+
+    # create options
+    filt = dict()
+
+    # only joint data
+    filt['joint'] = left.checkbox('Use only data available for all RCPs (N=16)', value=False, key=f'{key}_joint_checkbox')
+    
+    # filter by year
+    _year  = left.slider('Years', value=[2075, 2095], min_value=2006, max_value=2099, step=1, key=f'{key}_year_slider')
+    filt['year'] = slice(str(_year[0]), str(_year[1]))
+
+    # this stuff is only expert mode
+    if expert_mode:
+        # get the data to filter for options
+        ts = dataManager.read('wind_timeseries')
+        
+        # filter RCP
+        RCP = {'all': 'All RCPs', 'rcp26': 'RCP 2.6', 'rcp45': 'RCP 4.5', 'rcp85': 'RCP 8.5'}
+        _rcp = left.select_slider('Select RCP scenario', options=list(RCP.keys()), value='all', format_func=lambda k: RCP.get(k), key=f'{key}_rcp_slider')
+        if _rcp != 'all':
+            filt['rcp'] = _rcp
+
+        # filter GCMs
+        if _rcp != 'all':
+            gcms = ts[ts.RCP == _rcp].GCM.unique()
+        else:
+            gcms = ts.GCM.unique()
+        _gcm = left.selectbox('Filter by GCM', options=['- all -', *gcms], format_func=lambda k: k.upper(), key=f'{key}_gcm_selectbox')
+        if _gcm != '- all -':
+            filt['gcm'] = _gcm
+
+        # filter RCMSs
+        if _gcm != '- all -':
+            rcms = ts[ts.GCM == _gcm].RCM.unique()
+        else:
+            rcms = ts.RCM.unique()
+        _rcm = left.selectbox('Filter by RCM', options=['- all -', *rcms], format_func=lambda k: k.upper(), key=f'{key}_rcm_selectbox')
+        if _rcm != '- all -':
+            filt['rcm'] = _rcm
+
+    # TODO: These inputs need to be implemented interactively
+    #define just something
+    gen = [np.arange(0, 1, 0.25) for i in range(3)]
+    specs = [c for c in product(*gen) if abs(sum(c)) -1.0 < 1e-5][1:]
+
+
+    # load all data
+    actions, _ = windpower_actions_projection(dataManager, specs=specs, filter_=filt)
+
+    # create the plot
+    fig = windpower_distplot(actions, fill='tozeroy')
+    fig.update_layout(
+        title=f"{'%s - ' % RCP.get(filt['rcp']) if 'rcp' in filt else ''}Annual windpower distribution {_year[0]} - {_year[1]}",
+        height=600,
+    )
+    right.plotly_chart(fig, use_container_width=True)
+
+
 def wind_turbine_dimensions(config: Config):
     """Let the user play with some wind turbine dimensioning"""
     # get a translator
@@ -225,18 +290,20 @@ def wind_turbine_dimensions(config: Config):
     l.info('Use the Form below to check out how the turbines dimensions change the footprint of each wind turbine.')
 
     # check if there are already specs
-    specs = config.get('wind_dim_specs', [])
+    # specs = config.get('wind_dim_specs', [])
 
     # add the form
     with l.expander('Dimensions' if config.lang=='en' else 'Dimensionierung', expanded=True):
-        mw = st.number_input(
-            'rated power  production [MW]' if config.lang=='en' else 'Nennleistung [MW]',
-            value=0.8,
-            min_value=0.0,
-            max_value=100.0
-        )
-        dia = st.number_input('Rotor diameter [m]' if config.lang=='en' else 'Rotordurchmesser [m]', value=53, min_value=1, max_value=250)
-        
+        # mw = st.number_input(
+        #     'rated power  production [MW]' if config.lang=='en' else 'Nennleistung [MW]',
+        #     value=0.8,
+        #     min_value=0.0,
+        #     max_value=100.0
+        # )
+        # dia = st.number_input('Rotor diameter [m]' if config.lang=='en' else 'Rotordurchmesser [m]', value=53, min_value=1, max_value=250)
+        mw = st.slider('Rated power production [MW]', min_value=0.0, max_value=25.0, value=1.4)
+        dia = st.slider('Rotor diameter [m]', min_value=1, max_value=200, value=64)
+
         # calculate the dimensions
         area = (5* dia * 3* dia) / 10000
         n_turbines = int(396. / area)
@@ -247,18 +314,27 @@ def wind_turbine_dimensions(config: Config):
         mets[1].metric('Installed power [MW]', value=prod)
         mets[2].metric('Area / turbine [ha]', value=area)
 
-        add = st.button('Add to plot' if config.lang=='en' else 'Zur Abbildung hinzufügen')
+        # add = st.button('Add to plot' if config.lang=='en' else 'Zur Abbildung hinzufügen')
 
-        if add:
-            specs.append((prod, n_turbines))
-            st.session_state.wind_dim_specs = specs
-            st.experimental_rerun()
+        # if add:
+        #     specs.append((prod, n_turbines))
+        #     st.session_state.wind_dim_specs = specs
+        #     st.experimental_rerun()
 
     # Create the plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=[_[1] for _ in specs], y=[_[0] for _ in specs], mode='markers', name='User defined turbines'))
-    for d, name in zip([(74.4, 93), (57, 19), (120, 16)], ['E53', 'E115', 'E126']):
-        fig.add_trace(go.Scatter(x=[d[1]], y=[d[0]], mode='markers', name=name))
+    #fig.add_trace(go.Scatter(x=[_[1] for _ in specs], y=[_[0] for _ in specs], mode='markers', name='User defined turbines'))
+    fig.add_trace(
+        go.Scatter(x=[n_turbines], y=[prod], mode='markers', marker=dict(color='purple', size=35, opacity=0.8), name='User defined turbines')
+    )
+
+    # add all scenarios
+    for d, name, color in zip([(74.4, 93), (57, 19), (120, 16)], ['E53', 'E115', 'E126'], ['orange', 'green', 'blue']):
+        fig.add_trace(
+            go.Scatter(x=[d[1]], y=[d[0]], mode='markers+text', text=name, marker=dict(color=color, size=30, opacity=0.3), name=name)
+        )
+    
+    # add figure
     fig.update_layout(xaxis=dict(title='Number of Turbines [N]'), yaxis=dict(title='Installed power [MW]'), legend=dict(orientation='h'))
     r.plotly_chart(fig, use_container_width=True)
 
@@ -328,8 +404,14 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
     # add the plot
     # go for each filter option
     data = []
+    dims = []
     for filt in filt_opts:
-        data.extend(windpower_actions_projection(dataManager, specs, filter_=filt))
+        _dat, _dim = windpower_actions_projection(dataManager, specs, filter_=filt)
+        data.extend(_dat)
+        dims.extend(_dim)
+    
+    metric_exp = plot_area.expander('Statistics', expanded=True)
+    metric_container = metric_exp.columns(len(data))
 
     # show the plot
     fig = windpower_distplot(data, fill='tozeroy', names=names, showlegend=True)
@@ -337,15 +419,28 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
     fig.update_layout(xaxis=dict(title='Annual wind power [MW]'), legend=dict(orientation='h'))
     plot_area.plotly_chart(fig, use_container_width=True)
 
-    for d in data:
-        st.table(d.sum())
+    for d, dim, name,  col in zip(data, dims, names, metric_container):
+        col.markdown(f'#### {name}')
+        col.metric('Annual Production [GW]', int(d.mean().sum() / 1000))
+        col.metric('Turbines [N]', int(sum(dim)))
+        
+    st.markdown('<hr style="margin-top: 3rem; margin-bottom: 3rem;">', unsafe_allow_html=True)
+    st.info('This was only one example how the windpower can be provisioned for Krummhörn. Make more in-depth in our final expert windpower explorer.')
+    finish = st.button('CONTINUE' if config.lang=='en' else 'WEITER')
+    if finish:
+        st.session_state.windpower_stage = 'final'
+        st.experimental_rerun()
+
 
 def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""
     st.title('Wind power experiments')
 
-    PLOTS = dict(variable='Climate Model windspeeds')
+    PLOTS = dict(variable='Climate Model windspeeds', upscale='Provisioning windpower for Krummhörn')
     
+    # add the expert Mode
+    expert_mode = st.sidebar.checkbox('Unlock Expert mode', value=False)
+
     # add the plot controller
     n_plots = int(st.sidebar.number_input('Number of Charts', value=1, min_value=1, max_value=5))
 
@@ -356,6 +451,9 @@ def windpower(dataManager: DataManager, config: Config) -> None:
             # switch the plots
             if plt_type == 'variable':
                 windspeed_rcp_plots(dataManager, config, key=f'windspeed_{i + 1}')
+            
+            elif plt_type == 'upscale':
+                upscale_plots(dataManager, config, expert_mode=expert_mode, key=f'upscale_{i + 1}')
 
 
 def windpower_story(dataManager: DataManager, config: Config) -> None:
