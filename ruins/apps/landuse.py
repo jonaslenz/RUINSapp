@@ -1,9 +1,11 @@
 from typing import List
+from itertools import product
 
 import streamlit as st
 from streamlit_graphic_slider import graphic_slider
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import numpy as np
 
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot
@@ -210,6 +212,23 @@ def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'wi
     st.plotly_chart(fig, use_container_width=True)
 
 
+def upscale_plots(dataManager: DataManager, config: Config, key: str = 'upscale') -> None:
+    """"""
+    # TODO: These inputs need to be implemented interactively
+
+    #define just something
+    gen = [np.arange(0, 1, 0.25) for i in range(3)]
+    specs = [c for c in product(*gen) if abs(sum(c)) -1.0 < 1e-5][1:]
+
+
+    # load all data
+    actions, _ = windpower_actions_projection(dataManager, specs=specs)
+
+    # create the plot
+    fig = windpower_distplot(actions, fill='tozeroy')
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def wind_turbine_dimensions(config: Config):
     """Let the user play with some wind turbine dimensioning"""
     # get a translator
@@ -358,13 +377,20 @@ def upscale_windpower(dataManager: DataManager, config: Config) -> None:
         col.markdown(f'#### {name}')
         col.metric('Annual Production [GW]', int(d.mean().sum() / 1000))
         col.metric('Turbines [N]', int(sum(dim)))
+        
+    st.markdown('<hr style="margin-top: 3rem; margin-bottom: 3rem;">', unsafe_allow_html=True)
+    st.info('This was only one example how the windpower can be provisioned for Krummhörn. Make more in-depth in our final expert windpower explorer.')
+    finish = st.button('CONTINUE' if config.lang=='en' else 'WEITER')
+    if finish:
+        st.session_state.windpower_stage = 'final'
+        st.experimental_rerun()
 
 
 def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""
     st.title('Wind power experiments')
 
-    PLOTS = dict(variable='Climate Model windspeeds')
+    PLOTS = dict(variable='Climate Model windspeeds', upscale='Provisioning windpower for Krummhörn')
     
     # add the plot controller
     n_plots = int(st.sidebar.number_input('Number of Charts', value=1, min_value=1, max_value=5))
@@ -376,6 +402,9 @@ def windpower(dataManager: DataManager, config: Config) -> None:
             # switch the plots
             if plt_type == 'variable':
                 windspeed_rcp_plots(dataManager, config, key=f'windspeed_{i + 1}')
+            
+            elif plt_type == 'upscale':
+                upscale_plots(dataManager, config, key=f'upscale_{i + 1}')
 
 
 def windpower_story(dataManager: DataManager, config: Config) -> None:
