@@ -143,14 +143,28 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
     # get the data
     df = load_windpower_data(dataManager, joint_only=filter_.get('joint', False))
 
+    # set the filter keys
+    gcm_level = 2
+    rcm_level = 3
     # apply filters
     for key, val in filter_.items():
         if key == 'year':
             df = df[val]
         elif key == 'rcp':
             df = df.xs(val, level=1, axis=1)
+
+            # Multiindex has one level less
+            gcm_level -= 1
+            rcm_level -= 1
+
         elif key == 'gcm':
-            df = df.xs(val, level=2, axis=1)
+            df = df.xs(val, level=gcm_level, axis=1)
+
+            # Multiindex has one level less
+            rcm_level -= 1
+        
+        elif key == 'rcm':
+            df = df.xs(val, level=rcm_level, axis=1)
 
     # aggregate everything
     actions = []
