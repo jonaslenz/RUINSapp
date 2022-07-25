@@ -212,21 +212,67 @@ def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'wi
     st.plotly_chart(fig, use_container_width=True)
 
 
-def upscale_plots(dataManager: DataManager, config: Config, key: str = 'upscale') -> None:
-    """"""
-    # TODO: These inputs need to be implemented interactively
+def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = False, key: str = 'upscale') -> None:
+    """Show dist-plots for provisioned windpower in Krummhörn along with many filter options"""
+    # create the layout
+    left, right = st.columns((4, 6))
+    left.markdown('##### Options')
 
+    # create options
+    filt = dict()
+
+    # only joint data
+    filt['joint'] = left.checkbox('Use only data available for all RCPs (N=16)', value=False, key=f'{key}_joint_checkbox')
+    
+    # filter by year
+    _year  = left.slider('Years', value=[2075, 2095], min_value=2006, max_value=2099, step=1, key=f'{key}_year_slider')
+    filt['year'] = slice(str(_year[0]), str(_year[1]))
+
+    # this stuff is only expert mode
+    if expert_mode:
+        # get the data to filter for options
+        ts = dataManager.read('wind_timeseries')
+        
+        # filter RCP
+        RCP = {'all': 'All RCPs', 'rcp26': 'RCP 2.6', 'rcp45': 'RCP 4.5', 'rcp85': 'RCP 8.5'}
+        _rcp = left.select_slider('Select RCP scenario', options=list(RCP.keys()), value='all', format_func=lambda k: RCP.get(k), key=f'{key}_rcp_slider')
+        if _rcp != 'all':
+            filt['rcp'] = _rcp
+
+        # filter GCMs
+        if _rcp != 'all':
+            gcms = ts[ts.RCP == _rcp].GCM.unique()
+        else:
+            gcms = ts.GCM.unique()
+        _gcm = left.selectbox('Filter by GCM', options=['- all -', *gcms], format_func=lambda k: k.upper(), key=f'{key}_gcm_selectbox')
+        if _gcm != '- all -':
+            filt['gcm'] = _gcm
+
+        # filter RCMSs
+        if _gcm != '- all -':
+            rcms = ts[ts.GCM == _gcm].RCM.unique()
+        else:
+            rcms = ts.RCM.unique()
+        _rcm = left.selectbox('Filter by RCM', options=['- all -', *rcms], format_func=lambda k: k.upper(), key=f'{key}_rcm_selectbox')
+        if _rcm != '- all -':
+            filt['rcm'] = _rcm
+
+    # TODO: These inputs need to be implemented interactively
     #define just something
     gen = [np.arange(0, 1, 0.25) for i in range(3)]
     specs = [c for c in product(*gen) if abs(sum(c)) -1.0 < 1e-5][1:]
 
 
     # load all data
-    actions, _ = windpower_actions_projection(dataManager, specs=specs)
+    actions, _ = windpower_actions_projection(dataManager, specs=specs, filter_=filt)
 
     # create the plot
     fig = windpower_distplot(actions, fill='tozeroy')
-    st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(
+        title=f"{'%s - ' % RCP.get(filt['rcp']) if 'rcp' in filt else ''}Annual windpower distribution {_year[0]} - {_year[1]}",
+        height=600,
+    )
+    right.plotly_chart(fig, use_container_width=True)
 
 
 def wind_turbine_dimensions(config: Config):
@@ -392,6 +438,9 @@ def windpower(dataManager: DataManager, config: Config) -> None:
 
     PLOTS = dict(variable='Climate Model windspeeds', upscale='Provisioning windpower for Krummhörn')
     
+    # add the expert Mode
+    expert_mode = st.sidebar.checkbox('Unlock Expert mode', value=False)
+
     # add the plot controller
     n_plots = int(st.sidebar.number_input('Number of Charts', value=1, min_value=1, max_value=5))
 
@@ -404,7 +453,7 @@ def windpower(dataManager: DataManager, config: Config) -> None:
                 windspeed_rcp_plots(dataManager, config, key=f'windspeed_{i + 1}')
             
             elif plt_type == 'upscale':
-                upscale_plots(dataManager, config, key=f'upscale_{i + 1}')
+                upscale_plots(dataManager, config, expert_mode=expert_mode, key=f'upscale_{i + 1}')
 
 
 def windpower_story(dataManager: DataManager, config: Config) -> None:
