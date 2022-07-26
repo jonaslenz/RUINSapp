@@ -8,7 +8,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 
 from ruins.core import build_config, debug_view, DataManager, Config
-from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot
+from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot, ternary_provision_plot
 from ruins.processing.pdsi import multiindex_pdsi_data
 from ruins.processing.windpower import upscale_windenergy, windpower_actions_projection
 
@@ -211,21 +211,16 @@ def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'wi
     fig.update_layout(legend=dict(orientation='h'), template='plotly_white')
     st.plotly_chart(fig, use_container_width=True)
 
-
-def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = False, key: str = 'upscale') -> None:
-    """Show dist-plots for provisioned windpower in Krummhörn along with many filter options"""
-    # create the layout
-    left, right = st.columns((4, 6))
-    left.markdown('##### Options')
-
+def upscaled_data_filter(dataManager: DataManager, expert_mode: bool = False, key='upscale_filter', container = st) -> dict:
+    """Create a unified interface to filter the upscaled actions"""
     # create options
     filt = dict()
 
     # only joint data
-    filt['joint'] = left.checkbox('Use only data available for all RCPs (N=16)', value=False, key=f'{key}_joint_checkbox')
+    filt['joint'] = container.checkbox('Use only data available for all RCPs (N=16)', value=False, key=f'{key}_joint_checkbox')
     
     # filter by year
-    _year  = left.slider('Years', value=[2075, 2095], min_value=2006, max_value=2099, step=1, key=f'{key}_year_slider')
+    _year  = container.slider('Years', value=[2075, 2095], min_value=2006, max_value=2099, step=1, key=f'{key}_year_slider')
     filt['year'] = slice(str(_year[0]), str(_year[1]))
 
     # this stuff is only expert mode
@@ -235,7 +230,7 @@ def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = 
         
         # filter RCP
         RCP = {'all': 'All RCPs', 'rcp26': 'RCP 2.6', 'rcp45': 'RCP 4.5', 'rcp85': 'RCP 8.5'}
-        _rcp = left.select_slider('Select RCP scenario', options=list(RCP.keys()), value='all', format_func=lambda k: RCP.get(k), key=f'{key}_rcp_slider')
+        _rcp = container.select_slider('Select RCP scenario', options=list(RCP.keys()), value='all', format_func=lambda k: RCP.get(k), key=f'{key}_rcp_slider')
         if _rcp != 'all':
             filt['rcp'] = _rcp
 
@@ -244,7 +239,7 @@ def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = 
             gcms = ts[ts.RCP == _rcp].GCM.unique()
         else:
             gcms = ts.GCM.unique()
-        _gcm = left.selectbox('Filter by GCM', options=['- all -', *gcms], format_func=lambda k: k.upper(), key=f'{key}_gcm_selectbox')
+        _gcm = container.selectbox('Filter by GCM', options=['- all -', *gcms], format_func=lambda k: k.upper(), key=f'{key}_gcm_selectbox')
         if _gcm != '- all -':
             filt['gcm'] = _gcm
 
@@ -253,25 +248,67 @@ def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = 
             rcms = ts[ts.GCM == _gcm].RCM.unique()
         else:
             rcms = ts.RCM.unique()
-        _rcm = left.selectbox('Filter by RCM', options=['- all -', *rcms], format_func=lambda k: k.upper(), key=f'{key}_rcm_selectbox')
+        _rcm = container.selectbox('Filter by RCM', options=['- all -', *rcms], format_func=lambda k: k.upper(), key=f'{key}_rcm_selectbox')
         if _rcm != '- all -':
             filt['rcm'] = _rcm
+    
+    # finally return the filter
+    return filt
+
+
+def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = False, key: str = 'upscale') -> None:
+    """Show dist-plots for provisioned windpower in Krummhörn along with many filter options"""
+    # helper
+    turbines = ['E53', 'E115', 'E126']
+    # create the layout
+    left, right = st.columns((4, 6))
+    left.markdown('##### Options')
+
+    # create the filter interface
+    filt = upscaled_data_filter(dataManager, expert_mode=expert_mode, key=key, container=left)
 
     # TODO: These inputs need to be implemented interactively
     #define just something
-    gen = [np.arange(0, 1, 0.25) for i in range(3)]
-    specs = [c for c in product(*gen) if abs(sum(c)) -1.0 < 1e-5][1:]
-
+    gen = [np.arange(0, 1, 0.1) for i in range(3)]
+    specs = [c for c in product(*gen) if abs(sum(c) - 1.0) < 1e-5][1:]
+    
+    # ugly fix to get the correct group
+    COL = {0: 'rgba(255, 136, 0, %.2f)', 1: 'rgba(15, 133, 88, %.2f)', 2: 'rgba(27, 85, 131, %.2f)'}
+    grp = [np.argmax(s) for s in specs]
 
     # load all data
     actions, _ = windpower_actions_projection(dataManager, specs=specs, filter_=filt)
 
     # create the plot
-    fig = windpower_distplot(actions, fill='tozeroy')
+    fig = None
+    for g in set(grp):
+        # build the data for this group
+        g_actions = [a for a, gr in zip(actions, grp) if gr == g]
+        colors = [COL[g] % (i+ 1 / (len(g_actions) + 1)) for i in range(len(g_actions))]
+        names = [f"{int(s[g] * 100)}% {turbines[g]}" for s, gr in zip(specs, grp) if gr == g]
+        
+        fig = windpower_distplot(g_actions, fill='tozeroy', colors=colors, names=names, fig=fig)
+    
+    # update the figure layout
     fig.update_layout(
-        title=f"{'%s - ' % RCP.get(filt['rcp']) if 'rcp' in filt else ''}Annual windpower distribution {_year[0]} - {_year[1]}",
+        title=f"{'%s - ' % filt['rcp'].upper() if 'rcp' in filt else ''}Annual windpower distribution {filt['year'].start} - {filt['year'].stop}",
         height=600,
     )
+    right.plotly_chart(fig, use_container_width=True)
+
+
+def upscale_ternary_plot(dataManager: DataManager, config: Config, expert_mode: bool = False, key: str = 'ternary') -> None:
+    """Show a ternerary plot for all turbine conbinations in 10% steps with the provisioned power as contour lines"""
+    # create the layout
+    left, right = st.columns((4, 6))
+    left.markdown('##### Options')
+
+    # create the filter interface
+    filt = upscaled_data_filter(dataManager, expert_mode=expert_mode, key=key, container=left)
+
+    # create the plot
+    fig = ternary_provision_plot(dataManager, filter_=filt)
+    fig.update_layout(height=600)
     right.plotly_chart(fig, use_container_width=True)
 
 
@@ -436,7 +473,7 @@ def windpower(dataManager: DataManager, config: Config) -> None:
     """Load and visualize wind power experiments"""
     st.title('Wind power experiments')
 
-    PLOTS = dict(variable='Climate Model windspeeds', upscale='Provisioning windpower for Krummhörn')
+    PLOTS = dict(variable='Climate Model windspeeds', upscale='Provisioning windpower for Krummhörn', ternary='Ternary surface plot for Krummhörn')
     
     # add the expert Mode
     expert_mode = st.sidebar.checkbox('Unlock Expert mode', value=False)
@@ -454,6 +491,9 @@ def windpower(dataManager: DataManager, config: Config) -> None:
             
             elif plt_type == 'upscale':
                 upscale_plots(dataManager, config, expert_mode=expert_mode, key=f'upscale_{i + 1}')
+
+            elif plt_type == 'ternary':
+                upscale_ternary_plot(dataManager, config, expert_mode=expert_mode, key=f'ternary_{i + 1}')
 
 
 def windpower_story(dataManager: DataManager, config: Config) -> None:
