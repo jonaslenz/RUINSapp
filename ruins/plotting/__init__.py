@@ -9,4 +9,4 @@ from .cordex_sunburst import sunburst
 from .distribution_shift import plot_extreme_pdf
 from .pdsi import pdsi_plot, tree_plot
 from .climate_data import variable_plot
-from .windpower import windpower_distplot
+from .windpower import windpower_distplot, ternary_provision_plot

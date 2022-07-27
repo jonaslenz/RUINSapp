@@ -173,24 +173,32 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
         data = None
         dim = []
         for j, turbine in enumerate(turbines):
-            # get the chunk for this turbine
-            chunk = df[turbine.upper(), ].mean(axis=1)  # this is the part I am not sure about
+            # get the chunk for this turbine (can have more than one col)
+            c = df[turbine.upper(), ]
+
+            # check the type
+            if isinstance(c, pd.Series):
+                chunk = c
+            else:
+                # c is a Dataframe -> there was more than one GCM RCM RCP combination
+                chunk = c.melt().value
 
             # multiply with the number of turbines
             chunk *= power_share[i + j][0]
 
             # append the number of turbines
             dim.append(power_share[i + j][0])
+            
             # merge
             if data is None:
-                data = pd.DataFrame(data={turbine: chunk.values}, index=chunk.index)
-                #data = chunk
+                data = {turbine: chunk.values}
+            elif turbine in data:
+                data[turbine] = np.concatenate([data[turbine], chunk.values])    
             else:
-                #data = pd.merge(data, chunk, left_index=True, right_index=True, how='outer')
                 data[turbine] = chunk.values
         
         # append the data
-        actions.append(data)
+        actions.append(pd.DataFrame(data))
         dims.append(dim)
 
     return actions, dims
