@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+from plotly.subplots import make_subplots
 
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import floodmodel
@@ -70,7 +71,7 @@ def user_input_defaults():
     return slr, t1, t2, kge, canal_flow_scale, canal_area, advance_pump, maxdh
 
 
-def timeslice_observed_data(t1, t2, slr, dataManager):
+def timeslice_observed_data(dataManager: DataManager, t1, t2, slr):
 
     raw = dataManager['levelknock'].read()
     weather_1h = dataManager['prec'].read()
@@ -84,7 +85,8 @@ def timeslice_observed_data(t1, t2, slr, dataManager):
     
     # EVEx5 observed
     
-    EVEx5 = pd.read_csv('//home/lucfr/hydrocode/RUINS_hydropaper-newlayout/streamlit/data/levelLW.csv')
+    #EVEx5 = pd.read_csv('//home/lucfr/hydrocode/RUINS_hydropaper-newlayout/streamlit/data/levelLW.csv')
+    EVEx5 = dataManager['levelLW'].read()
     EVEx5.index = pd.to_datetime(EVEx5.iloc[:,0])
     EVEx5_lw_pegel_timesliced = (EVEx5['LW_Pegel_Aussen_pval']/100+0.095)[t1:t2]
     
@@ -152,14 +154,8 @@ def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_ar
     return model_runs
 
 
-def run_streamlit():
-    from plotly.subplots import make_subplots
+def run_streamlit(dataManager: DataManager, config: Config):
 
-    config, dataManager = build_config()
-
-    #st.set_page_config(layout="centered")
-    #st.set_page_config(layout="wide")
-    #st.title('RUINS - short term inland flood forecast')
     st.sidebar.header('Control Panel')
 
 
@@ -206,7 +202,7 @@ def run_streamlit():
     (tide, 
     hourly_recharge, 
     EVEx5_lw_pegel_timesliced, 
-    pump_capacity_observed) = timeslice_observed_data(t1, t2, slr, dataManager)
+    pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr)
 
     x = create_initial_x_dataset(tide, hourly_recharge)
 
@@ -270,7 +266,7 @@ def concept_explainer(config: Config, **kwargs):
 #     st.empty()
 
 
-def flood_model(config:Config, **kwargs):
+def flood_model(dataManager: DataManager, config:Config, **kwargs):
     """
     Version of the flooding model in which the user can play around with the parameters.
     """
@@ -278,7 +274,7 @@ def flood_model(config:Config, **kwargs):
     t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
 
     with st.empty():
-        run_streamlit()
+        run_streamlit(dataManager, config)
     
 
 def main_app(**kwargs):
@@ -295,11 +291,8 @@ def main_app(**kwargs):
     # explainer
     concept_explainer(config)
 
-    # TODO: Demonstrate model using one or two real flood events.
-    #demonstrate_flood_model(config)
-
     # TODO: expert mode: user takes control over model parameters
-    flood_model(config)
+    flood_model(dataManager, config)
 
     # end state debug
     debug_view.debug_view(dataManager, config, debug_name='DEBUG - finished app')
