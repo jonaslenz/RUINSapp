@@ -10,7 +10,7 @@ import numpy as np
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot, ternary_provision_plot
 from ruins.processing.pdsi import multiindex_pdsi_data
-from ruins.processing.windpower import upscale_windenergy, windpower_actions_projection, create_action_grid
+from ruins.processing.windpower import windpower_actions_projection, create_action_grid
 
 
 _TRANSLATE_EN = dict(
@@ -267,14 +267,6 @@ def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = 
 
     # create the filter interface
     filt = upscaled_data_filter(dataManager, expert_mode=expert_mode, key=key, container=left)
-
-    # # TODO: These inputs need to be implemented interactively
-    # #define just something
-    # gen = [np.arange(0, 1, 0.1) for i in range(3)]
-    # specs = [c for c in product(*gen) if abs(sum(c) - 1.0) < 1e-5][1:]
-    
-    # # load all data
-    # actions, _ = windpower_actions_projection(dataManager, specs=specs, filter_=filt)
 
     # build a uniform action grid
     actions, scenarios = create_action_grid(dataManager, resolution=0.1, filter_=filt)
