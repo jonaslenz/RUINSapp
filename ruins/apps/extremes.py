@@ -26,6 +26,93 @@ _INTRO_DE = dict(
 """
 )
 
+_INTRO_SLIDE1_EN = dict(
+    title='Extreme events & flooding',
+    introduction="""
+    Das Experiment Extremereignisse betrachtet Inlandfluten in der Krummhörn.
+    Etwa ein Drittel der Region wurde durch Eindeichung aus ehemaligem Meeresgebiet in bewirtschaftbares Gebiet umgewandelt und liegt unterhalb des mittleren Meeresspiegels. Niederschlagswasser, dass in diesem Gebiet anfällt, muss daher in einem künstlich angelegtem Entwässerungssystemen aus dem Gebiet geschafft werden.
+    Das Entwässerungssystem besteht aus Kanälen, Pumpen und Sielen. Ein Siel ist ein Tor im Deich, durch das bei Ebbe Wasser aus den Kanälen in die Nordsee fließen kann. Die Kanäle sammeln das anfallende Wasser und leiten dieses zu den Pumpen oder Sielen.
+"""
+)
+
+_INTRO_SLIDE1_DE = dict(
+    title='Extremereignisse & Überflutungen',
+    introduction="""
+    Das Experiment Extremereignisse betrachtet Inlandfluten in der Krummhörn.
+    Etwa ein Drittel der Region wurde durch Eindeichung aus ehemaligem Meeresgebiet in bewirtschaftbares Gebiet umgewandelt und liegt unterhalb des mittleren Meeresspiegels. Niederschlagswasser, dass in diesem Gebiet anfällt, muss daher in einem künstlich angelegtem Entwässerungssystemen aus dem Gebiet geschafft werden.
+    Das Entwässerungssystem besteht aus Kanälen, Pumpen und Sielen. Ein Siel ist ein Tor im Deich, durch das bei Ebbe Wasser aus den Kanälen in die Nordsee fließen kann. Die Kanäle sammeln das anfallende Wasser und leiten dieses zu den Pumpen oder Sielen.
+"""
+)
+
+_INTRO_SLIDE2_EN = dict(
+    title='Extreme events & flooding',
+    introduction="""
+    Die Wassermenge, die durch Siele und Pumpen entwässert werden kann, wird durch den Wasserstand der Nordsee bestimmt. Ist dieser höher als der Wasserspiegel an der Innenseite des Siels, kann nicht gesielt werden. Auch die Pumpen verlieren Leistung, wenn sie gegen einen höheren Außenwasserstand pumpen müssen. Der Tidegang der Nordsee führt zu sich ständig ändernden Wasserspiegeln und damit Pump-/Sielkapazitäten. Neben diesen haben auch die Kanäle nur eine begrenzte Fließkapazität, die Entwässerung kann also auch von der Kanalseite limitiert sein. 
+"""
+)
+
+_INTRO_SLIDE2_DE = dict(
+    title='Extremereignisse & Überflutungen',
+    introduction="""
+    Die Wassermenge, die durch Siele und Pumpen entwässert werden kann, wird durch den Wasserstand der Nordsee bestimmt. Ist dieser höher als der Wasserspiegel an der Innenseite des Siels, kann nicht gesielt werden. Auch die Pumpen verlieren Leistung, wenn sie gegen einen höheren Außenwasserstand pumpen müssen. Der Tidegang der Nordsee führt zu sich ständig ändernden Wasserspiegeln und damit Pump-/Sielkapazitäten. Neben diesen haben auch die Kanäle nur eine begrenzte Fließkapazität, die Entwässerung kann also auch von der Kanalseite limitiert sein. 
+"""
+)
+
+_INTRO_SLIDE3_EN = dict(
+    title='Extreme events & flooding',
+    introduction="""
+    Neben der Wassermenge, die entwässert werden kann, ist das Auftreten von starken Niederschlägen und die Bodenwassersättigung relevant für Überflutungen in der Region. Niederschläge treten üblicherweise mit durchziehenden Tiefdruckgebieten auf. Im Sommer können die Böden der Region Wasser aufnehmen, weswegen nur ein geringer Anteil des Niederschlags in die Kanäle fließt. Im Winter sind die Böden weitestgehend gesättigt und ein großer Teil des Niederschlagswassers muss abgeführt werden. Neben den Niederschlägen können die Tiefdruckgebiete zusätzlich Sturmflutsituation verursachen, die den Wasserstand der Nordsee über den üblichen Tidegang hinaus anheben. In Folge werden die Pumpen insbesondere in den Wintermonaten stark ausgelastet.
+"""
+)
+
+_INTRO_SLIDE3_DE = dict(
+    title='Extremereignisse & Überflutungen',
+    introduction="""
+    Neben der Wassermenge, die entwässert werden kann, ist das Auftreten von starken Niederschlägen und die Bodenwassersättigung relevant für Überflutungen in der Region. Niederschläge treten üblicherweise mit durchziehenden Tiefdruckgebieten auf. Im Sommer können die Böden der Region Wasser aufnehmen, weswegen nur ein geringer Anteil des Niederschlags in die Kanäle fließt. Im Winter sind die Böden weitestgehend gesättigt und ein großer Teil des Niederschlagswassers muss abgeführt werden. Neben den Niederschlägen können die Tiefdruckgebiete zusätzlich Sturmflutsituation verursachen, die den Wasserstand der Nordsee über den üblichen Tidegang hinaus anheben. In Folge werden die Pumpen insbesondere in den Wintermonaten stark ausgelastet.
+"""
+)
+
+_INTRO_SLIDE4_EN = dict(
+    title='Extreme events & flooding',
+    introduction="""
+    Übersteigt das anfallende Wasser die Entwässerungskapazität erhöht sich der Wasserstand in den Kanälen. Wenn bei starken Niederschlägen der Wasserstand in den Kanälen über einen kritischen Wasserstand steigt ist mit ersten Schäden zu rechnen.
+"""
+)
+
+_INTRO_SLIDE4_DE = dict(
+    title='Extremereignisse & Überflutungen',
+    introduction="""
+    Übersteigt das anfallende Wasser die Entwässerungskapazität erhöht sich der Wasserstand in den Kanälen. Wenn bei starken Niederschlägen der Wasserstand in den Kanälen über einen kritischen Wasserstand steigt ist mit ersten Schäden zu rechnen.
+"""
+)
+
+_INTRO_SLIDE5_EN = dict(
+    title='Extreme events & flooding',
+    introduction="""
+    Ein steigender mittlerer Meeresspiegel wirkt sich direkt auf die Entwässerungskapazität der Region aus, da Sielen nicht mehr möglich und Pumpen weniger effizient sein wird. Hinsichtlich des Klimawandels stellen die Prognosen zum Meeresspiegelanstieg unter verschiedenen Emmisions-Szenarien und Annahmen zu Umweltprozessen somit eine weitere Quelle Knight’scher Unsicherheiten dar.
+"""
+)
+
+_INTRO_SLIDE5_DE = dict(
+    title='Extremereignisse & Überflutungen',
+    introduction="""
+    Ein steigender mittlerer Meeresspiegel wirkt sich direkt auf die Entwässerungskapazität der Region aus, da Sielen nicht mehr möglich und Pumpen weniger effizient sein wird. Hinsichtlich des Klimawandels stellen die Prognosen zum Meeresspiegelanstieg unter verschiedenen Emmisions-Szenarien und Annahmen zu Umweltprozessen somit eine weitere Quelle Knight’scher Unsicherheiten dar.
+"""
+)
+
+_INTRO_SLIDE6_EN = dict(
+    title='Extreme events & flooding',
+    introduction="""
+    Das Risiko erhöhter Wasserspiegel steigt mit steigendem Meeresspiegel. Ein vorausschauendes Absenken des Wasserspiegels in den Kanälen im Vorfeld eines Extremereignissen kann das Risiko von Überflutungen senken.
+"""
+)
+
+_INTRO_SLIDE6_DE = dict(
+    title='Extremereignisse & Überflutungen',
+    introduction="""
+    Das Risiko erhöhter Wasserspiegel steigt mit steigendem Meeresspiegel. Ein vorausschauendes Absenken des Wasserspiegels in den Kanälen im Vorfeld eines Extremereignissen kann das Risiko von Überflutungen senken.
+"""
+)
 
 
 def user_input_defaults():
