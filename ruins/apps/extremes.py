@@ -318,7 +318,7 @@ def concept_explainer(config: Config, **kwargs):
     
     # get the container and a translation function
     container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(en=_INTRO_EN, de=_TRANSLATE_DE)
+    t = config.translator(en=_INTRO_EN, de=_INTRO_DE)
 
     # place title and intro
     container.title(t('title'))
