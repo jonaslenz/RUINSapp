@@ -10,7 +10,7 @@ import numpy as np
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import pdsi_plot, tree_plot, variable_plot, windpower_distplot, ternary_provision_plot
 from ruins.processing.pdsi import multiindex_pdsi_data
-from ruins.processing.windpower import upscale_windenergy, windpower_actions_projection
+from ruins.processing.windpower import upscale_windenergy, windpower_actions_projection, create_action_grid
 
 
 _TRANSLATE_EN = dict(
@@ -211,6 +211,7 @@ def windspeed_rcp_plots(dataManager: DataManager, config: Config, key: str = 'wi
     fig.update_layout(legend=dict(orientation='h'), template='plotly_white')
     st.plotly_chart(fig, use_container_width=True)
 
+
 def upscaled_data_filter(dataManager: DataManager, expert_mode: bool = False, key='upscale_filter', container = st) -> dict:
     """Create a unified interface to filter the upscaled actions"""
     # create options
@@ -267,34 +268,43 @@ def upscale_plots(dataManager: DataManager, config: Config, expert_mode: bool = 
     # create the filter interface
     filt = upscaled_data_filter(dataManager, expert_mode=expert_mode, key=key, container=left)
 
-    # TODO: These inputs need to be implemented interactively
-    #define just something
-    gen = [np.arange(0, 1, 0.1) for i in range(3)]
-    specs = [c for c in product(*gen) if abs(sum(c) - 1.0) < 1e-5][1:]
+    # # TODO: These inputs need to be implemented interactively
+    # #define just something
+    # gen = [np.arange(0, 1, 0.1) for i in range(3)]
+    # specs = [c for c in product(*gen) if abs(sum(c) - 1.0) < 1e-5][1:]
     
+    # # load all data
+    # actions, _ = windpower_actions_projection(dataManager, specs=specs, filter_=filt)
+
+    # build a uniform action grid
+    actions, scenarios = create_action_grid(dataManager, resolution=0.1, filter_=filt)
+
+
     # ugly fix to get the correct group
     COL = {0: 'rgba(255, 136, 0, %.2f)', 1: 'rgba(15, 133, 88, %.2f)', 2: 'rgba(27, 85, 131, %.2f)'}
-    grp = [np.argmax(s) for s in specs]
+    grp = [np.argmax(s) for s in scenarios]
 
-    # load all data
-    actions, _ = windpower_actions_projection(dataManager, specs=specs, filter_=filt)
-
+    # fill
+    plot_area = right.container()
+    fill = right.checkbox('Fill PDFs', value=True)
     # create the plot
     fig = None
     for g in set(grp):
         # build the data for this group
         g_actions = [a for a, gr in zip(actions, grp) if gr == g]
         colors = [COL[g] % (i+ 1 / (len(g_actions) + 1)) for i in range(len(g_actions))]
-        names = [f"{int(s[g] * 100)}% {turbines[g]}" for s, gr in zip(specs, grp) if gr == g]
+        names = [f"{int(s[g] * 100)}% {turbines[g]}" for s, gr in zip(scenarios, grp) if gr == g]
         
-        fig = windpower_distplot(g_actions, fill='tozeroy', colors=colors, names=names, fig=fig)
+        fig = windpower_distplot(g_actions, fill='tozeroy' if fill else None, colors=colors, names=names, fig=fig)
     
     # update the figure layout
     fig.update_layout(
         title=f"{'%s - ' % filt['rcp'].upper() if 'rcp' in filt else ''}Annual windpower distribution {filt['year'].start} - {filt['year'].stop}",
         height=600,
+        xaxis=dict(title='Provisioned Windpower [MW]'),
+        yaxis=dict(title='Probability Density'),
     )
-    right.plotly_chart(fig, use_container_width=True)
+    plot_area.plotly_chart(fig, use_container_width=True)
 
 
 def upscale_ternary_plot(dataManager: DataManager, config: Config, expert_mode: bool = False, key: str = 'ternary') -> None:
