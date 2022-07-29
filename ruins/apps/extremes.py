@@ -9,7 +9,7 @@ from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import floodmodel
 
 
-_TRANSLATE_EN = dict(
+_INTRO_EN = dict(
     title='Extreme events & flooding',
     introduction="""
     In this section, a model is presented to assess the influence of sea level change, inland precipitation, and 
@@ -17,7 +17,7 @@ _TRANSLATE_EN = dict(
 """
 )
 
-_TRANSLATE_DE = dict(
+_INTRO_DE = dict(
     title='Extremereignisse & Überflutungen',
     introduction="""
     In diesem Abschnitt wird ein Modell vorgestellt, mit dem sich der Einfluss von Meeresspiegelveränderungen, 
@@ -146,7 +146,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     Version of the flooding model in which the user can play around with the parameters.
     """
     container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
+    t = config.translator(de=_TRANSLATE_DE, en=_INTRO_EN)
 
     st.sidebar.header('Control Panel')
 
@@ -231,7 +231,7 @@ def concept_explainer(config: Config, **kwargs):
     
     # get the container and a translation function
     container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(en=_TRANSLATE_EN, de=_TRANSLATE_DE)
+    t = config.translator(en=_INTRO_EN, de=_TRANSLATE_DE)
 
     # place title and intro
     container.title(t('title'))
