@@ -103,13 +103,19 @@ def management_scatter_plot(data: pd.DataFrame = None, scenarios: List[Tuple[flo
 
     if scenarios is not None and len(scenarios) == len(data):
         # create the names
+        customdata = [(int(t[0] * 100), int(t[1] * 100), int(t[2] * 100)) for t in scenarios]
+        tmp = """<b>E53:</b> %{customdata[0]}%<br><b>E115:</b> %{customdata[1]}%<br><b>E126:</b> %{customdata[2]}%<br><extra></extra>"""
 
         # create the colors
-        colors = [COLOR.get(np.argmin(s)) for s in scenarios]
+        colors = [COLOR.get(np.argmax(s)) for s in scenarios]
 
+    else:
+        customdata = None
+        tmp = "%{x} %{y}"
+        colors = 'lightsteelblue'
     # create the figure
     fig.add_trace(
-        go.Scatter(x=x, y=y, mode='markers', marker=dict(color=colors, size=10, opacity=0.9))
+        go.Scatter(x=x, y=y, mode='markers', marker=dict(color=colors, size=10, opacity=0.9), customdata=customdata, hovertemplate=tmp)
     )
 
     # return fig
