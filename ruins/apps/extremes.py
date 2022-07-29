@@ -108,19 +108,6 @@ def create_initial_x_dataset(tide_data, hourly_recharge):
     return x 
 
 
-def create_all_kge_canal_par_dataframe(dhq_folder_path):
-    all_kge_canal_par_df = pd.DataFrame()
-
-    for file in os.listdir(dhq_folder_path):
-        if file.startswith('dhq_post'):
-            dhq_ndarray = np.load(dhq_folder_path + file)['a']
-            dhq_df = pd.DataFrame(dhq_ndarray)
-            dhq_df.insert(loc=0, column='KGE', value=int(''.join(filter(str.isdigit, file))))
-            all_kge_canal_par_df = pd.concat([all_kge_canal_par_df, dhq_df], ignore_index=True)
-            
-    return all_kge_canal_par_df
-
-
 def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x_df, advance_pump, maxdh):
     import dev.drain_cap as drain_cap
     
@@ -154,7 +141,12 @@ def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_ar
     return model_runs
 
 
-def run_streamlit(dataManager: DataManager, config: Config):
+def flood_model(dataManager: DataManager, config:Config, **kwargs):
+    """
+    Version of the flooding model in which the user can play around with the parameters.
+    """
+    container = kwargs['container'] if 'container' in kwargs else st
+    t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
 
     st.sidebar.header('Control Panel')
 
@@ -206,28 +198,26 @@ def run_streamlit(dataManager: DataManager, config: Config):
 
     x = create_initial_x_dataset(tide, hourly_recharge)
 
-    jonas_repo_path = '//home/lucfr/hydrocode/RUINS_hydropaper/'
+    all_kge_canal_par_df = dataManager['kge_canal_par'].read()
 
-    dhq_folder_path = os.path.join(jonas_repo_path, 'streamlit', 'cache/')
-
-    all_kge_canal_par_df = create_all_kge_canal_par_dataframe(dhq_folder_path)
 
     hg_model_runs = create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x, advance_pump, maxdh)
 
     # plotting:
-
-    col1, col2 = st.columns(2)
+    col1, col2 = container.columns(2)
 
     with col1:
         fig1 = make_subplots(2, 1)
         fig1 = floodmodel.sea_level(tide_data=tide, knock_level=6.5, fig=fig1, row=1, col=1)
         fig1 = floodmodel.canal_recharge(recharge_data=hourly_recharge, cumsum=False, fig=fig1, row=2, col=1)
+        fig1.update_layout(height=600)
         st.plotly_chart(fig1, use_container_width=True)   
     
     with col2:
         fig2 = make_subplots(2, 1)
         fig2 = floodmodel.absolute_water_level(hg_model_runs, EVEx5_lw_pegel_timesliced, fig=fig2, row=1, col=1)
         fig2 = floodmodel.pump_capacity(hg_model_runs, pump_capacity_observed, cumsum=False, fig=fig2, row=2, col=1)
+        fig2.update_layout(height=600, legend=dict(orientation="h"))
         st.plotly_chart(fig2, use_container_width=True)
 
 
@@ -255,26 +245,6 @@ def concept_explainer(config: Config, **kwargs):
     else:
         st.stop()
 
-
-# def demonstrate_flood_model(config:Config, **kwargs):
-#     """
-#     Demonstrate the flooding model using a real-life flood disaster.
-#     """
-#     container = kwargs['container'] if 'container' in kwargs else st
-#     t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
-
-#     st.empty()
-
-
-def flood_model(dataManager: DataManager, config:Config, **kwargs):
-    """
-    Version of the flooding model in which the user can play around with the parameters.
-    """
-    container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(de=_TRANSLATE_DE, en=_TRANSLATE_EN)
-
-    with st.empty():
-        run_streamlit(dataManager, config)
     
 
 def main_app(**kwargs):
