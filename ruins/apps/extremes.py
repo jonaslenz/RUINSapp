@@ -233,7 +233,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     Version of the flooding model in which the user can play around with the parameters.
     """
     container = kwargs['container'] if 'container' in kwargs else st
-    t = config.translator(de=_TRANSLATE_DE, en=_INTRO_EN)
+    t = config.translator(de=_INTRO_DE, en=_INTRO_EN)
 
     st.sidebar.header('Control Panel')
 
