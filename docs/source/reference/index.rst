@@ -9,3 +9,4 @@ Find the full code reference below:
     :caption: documentation
 
     plotting
+    processing/processing

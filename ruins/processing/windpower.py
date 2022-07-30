@@ -18,9 +18,29 @@ TURBINES = dict(
 
 
 def turbine_footprint(turbine: Union[str, Tuple[float, int]], unit: str = 'ha'):
-    """Calculate the footprint for the given turbine dimension"""
+    """
+    Calculate the footprint for the given turbine dimension. The turbine can
+    be either specified by rated power and rotor diameter, or by one the the type
+    names: E53, E115, E126.
+
+    Parameters
+    ----------
+    turbine : str or tuple
+        Either the turbine name or a tuple of (rated power, rotor diameter)
+    unit : str, optional
+        The unit of the returned footprint. Either 'ha' or 'km2'.
+        Defaults to 'ha'.
+    
+    Returns
+    -------
+    area : float
+        The area of the turbine in the given unit.
+    mw : float
+        The rated power of the turbine in MW.
+
+    """
     if isinstance(turbine, str):
-        turbine = TURBINES[turbine]
+        turbine = TURBINES[turbine.lower()]
     mw, r = turbine
     
     # get the area - 5*x * 3*y 
@@ -43,9 +63,21 @@ def upscale_windenergy(turbines: List[Union[str, Tuple[float, int]]], specs: Lis
     turbines per turbine or relative shares per turbine type.
     Returns a tuple for each turbine type.
 
+    Parameters
+    ----------
+    turbines : list
+        List of turbine definitions. Either names or MW, rotor_diameter tuples.
+    specs : list
+        List of the upscaling specifications. For this, the share of each turbine
+        in the turbines list, a area share has to be specified. Ideally, these
+        should at most sum up to 1. 
+    site : float, optional
+        Site area in ha. The upscaling will apply the specified area share
+        to each turbine type and return the maximum number of possible turbines.
+
     Returns
     -------
-    List[Tuple[float, int, float]]
+    results : List[Tuple[float, int, float]]
         A list of tuples per turbine type. (n_turbines, total_area, total_mw)
     """
     # check input data
@@ -53,7 +85,7 @@ def upscale_windenergy(turbines: List[Union[str, Tuple[float, int]]], specs: Lis
     #    raise ValueError('The number of turbines and the number of specs must be equal.')
     
     # result container
-    results = np.ones((len(specs) * len(turbines), 3)) * np.NaN
+    results = np.ones((len(specs) * len(turbines), len(turbnies))) * np.NaN
 
     # get the area and MW for each used turbine type
     turbine_dims = [turbine_footprint(turbine) for turbine in turbines]
@@ -76,13 +108,23 @@ def upscale_windenergy(turbines: List[Union[str, Tuple[float, int]]], specs: Lis
     return results
 
 
-def load_windpower_data(dataManager: DataManager, joint_only=False) -> pd.DataFrame:
+def load_windpower_data(dataManager: DataManager, joint_only: bool = False) -> pd.DataFrame:
     """
-    Load the raw windpower simulations and apply a MultiIndex
+    Load the raw windpower simulations and apply a MultiIndex. The rows are indexed
+    by all years contained in the climate simulations. The coluns group the single
+    simulations by Turbine type, global circulation model (GCM), regional climate 
+    model (RCM), and the CO2 scenario (RCP).
     
+    Parameters
+    ----------
     joint_only : bool
         If True, only data for 16 joint simulations are returned (combinations of global circulation 
         model (GCM), regional climate model (RCM) and ensemble available for all three RCPs).
+    
+    Returns
+    df : pd.DataFrame
+        Result dataframe with all contained years as row index and a simulation type
+        as column index.
     """
     
     # read windpower timeseries data
@@ -120,8 +162,37 @@ def load_windpower_data(dataManager: DataManager, joint_only=False) -> pd.DataFr
         return df
 
 
-def windpower_actions_projection(dataManager: DataManager, specs, site: float = 396.0, filter_={}) -> Tuple[List[pd.DataFrame], List[Tuple[int, float]]]:
+def windpower_actions_projection(dataManager: DataManager, scenarios, site: float = 396.0, filter_={}) -> Tuple[List[pd.DataFrame], List[Tuple[int, float]]]:
     """
+    Windpower management options (actions) upscaling.
+    This function can be used to specifiy several scenarios, how the three windturbines
+    E53, E115, E126 are balanced out. For each of these scenarios, the function will return
+    a pandas dataframe with the provisioned windpower for each of the three turbines and 
+    each year.
+    The used climate scenarios can be filtered by GCM, RCM, RCP or to only use combinations
+    of GCM RCM and ensemble, that are available for all RCPS (N=16).
+    The windpower data for each model combination that fits the filter will be concatenated,
+    thus there can be duplicate rows.
+
+    Parameters
+    ----------
+    dataManager : DataManager
+        DataManager instance to obtain the model data.
+    scenarios : list
+        List of scenario specifications.
+    site : float, optional
+        Site area in ha.
+    filter_ : dict, optional
+        Filter to apply to the scenarios. The filter can contain the keys:
+        'gcm', 'rcm', 'rcp', 'joint'.
+    
+    Returns
+    -------
+    actions : List[pd.DataFrame]
+        List of dataframes for each scenario.
+    dim : List[tuple]
+        The applied dimenisoning (number of turbines) for each scenario
+
     """
     # ignore MultiIndex sorting warnings as the df is small anyway
     warnings.simplefilter('ignore', category=pd.errors.PerformanceWarning) 
@@ -130,15 +201,15 @@ def windpower_actions_projection(dataManager: DataManager, specs, site: float = 
     turbines=['e53', 'e115', 'e126']
 
     # handle the specs
-    if len(specs) == 1 and any([isinstance(s, range) for s in specs]):
+    if len(scenarios) == 1 and any([isinstance(s, range) for s in scenarios]):
         # there is a range definition
         scenarios = []
-        for e1 in specs[0]:
-            for e2 in specs[1]:
-                for e3 in specs[2]:
+        for e1 in scenarios[0]:
+            for e2 in scenarios[1]:
+                for e3 in scenarios[2]:
                     scenarios.append((e1 / 100, e2 / 100, e3 / 100))
     else:
-        scenarios = specs
+        scenarios = scenarios
 
     # upscale the turbines to the site
     power_share = upscale_windenergy(turbines, scenarios)
@@ -213,8 +284,6 @@ def crra(payoff: np.array, gamma: float = 1.0, p: List[float] = None) -> Tuple[f
     Returns the expected utility, certainty equivalent, expected value and the 
     risk premium assocaiated to a management decision, based on an array of 
     payoffs.
-    
-    
     
     Parameters
     ----------
