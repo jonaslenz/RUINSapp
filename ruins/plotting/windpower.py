@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import numpy as np
 from numpy.linalg import LinAlgError
@@ -80,3 +80,44 @@ def ternary_provision_plot(dataManager: DataManager, filter_: dict = {}, turbine
     # build the figure
     fig = ff.create_ternary_contour(axes, data, pole_labels=turbines, ncontours=20, colorscale=colorscale, showscale=showscale)
     return fig
+
+
+def management_scatter_plot(data: pd.DataFrame = None, scenarios: List[Tuple[float, float, float]] = None, x: str = 'ce', y: str = 'up', fig: go.Figure = None) -> go.Figure:
+    """"""
+    # COLORS
+    COLOR = {0: 'orange', 1: 'green', 2: 'lightsteelblue'}
+
+    # create a figure
+    if fig is None:
+        fig = go.Figure()
+
+    # subset the data
+    if isinstance(data, pd.DataFrame) and isinstance(x, str) and x in data.columns:
+        x = data[x].values
+    if isinstance(data, pd.DataFrame) and isinstance(y, str) and y in data.columns:
+        y = data[y].values
+    
+    # check data types
+    if not isinstance(x, np.ndarray) or not isinstance(y, np.ndarray):
+        raise AttributeError('Either pass a DataFrame and specify x and y, or pass the data directly as numpy arrays for x and y.')
+
+    if scenarios is not None and len(scenarios) == len(data):
+        # create the names
+        customdata = [(int(t[0] * 100), int(t[1] * 100), int(t[2] * 100)) for t in scenarios]
+        tmp = """<b>E53:</b> %{customdata[0]}%<br><b>E115:</b> %{customdata[1]}%<br><b>E126:</b> %{customdata[2]}%<br><extra></extra>"""
+
+        # create the colors
+        colors = [COLOR.get(np.argmax(s)) for s in scenarios]
+
+    else:
+        customdata = None
+        tmp = "%{x} %{y}"
+        colors = 'lightsteelblue'
+    # create the figure
+    fig.add_trace(
+        go.Scatter(x=x, y=y, mode='markers', marker=dict(color=colors, size=10, opacity=0.9), customdata=customdata, hovertemplate=tmp)
+    )
+
+    # return fig
+    return fig
+    
