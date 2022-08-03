@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.plotting import floodmodel
+from ruins.processing import drain_cap
 
 
 _INTRO_EN = dict(
@@ -147,9 +148,7 @@ def create_initial_x_dataset(tide_data, hourly_recharge):
     return x 
 
 
-def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x_df, advance_pump, maxdh):
-    from processing import drain_cap
-    
+def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x_df, advance_pump, maxdh):    
     model_runs = []
     
     kge_canal_par_df = all_kge_canal_par_df.loc[all_kge_canal_par_df.KGE == kge]
