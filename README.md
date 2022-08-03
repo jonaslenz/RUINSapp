@@ -1,5 +1,6 @@
 # RUINS climate data and regional model app
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6958118.svg)](https://doi.org/10.5281/zenodo.6958118)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/hydrocode-de/RUINSapp?color=success&logo=Github)
 ![PyPI](https://img.shields.io/pypi/v/ruins-app?color=success&logo=PyPI)
 [![Test RUINS](https://github.com/hydrocode-de/RUINSapp/actions/workflows/main.yml/badge.svg)](https://github.com/hydrocode-de/RUINSapp/actions/workflows/main.yml)
