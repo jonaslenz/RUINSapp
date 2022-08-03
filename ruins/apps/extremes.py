@@ -148,7 +148,7 @@ def create_initial_x_dataset(tide_data, hourly_recharge):
 
 
 def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x_df, advance_pump, maxdh):
-    import dev.drain_cap as drain_cap
+    from processing import drain_cap
     
     model_runs = []
     
