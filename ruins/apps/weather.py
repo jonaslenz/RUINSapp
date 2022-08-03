@@ -11,8 +11,7 @@ from ruins.plotting import kde, yrplot_hm, climate_projection_parcoords, plot_cl
 from ruins.components import data_select, model_scale_select
 from ruins.core import build_config, debug_view, DataManager, Config
 from ruins.core.cache import partial_memoize
-from ruins.processing import calculate_climate_indices
-from ruins.processing.climate_indices import INDICES
+from ruins.processing.climate_indices import calculate_climate_indices, INDICES
 
 
 _TRANSLATE_DE_CLIMATE = dict(

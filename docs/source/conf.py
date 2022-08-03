@@ -39,7 +39,11 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.githubpages',
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'autoapi.extension'
 ]
+
+autoapi_dirs = ['../../ruins']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -67,5 +71,5 @@ html_static_path = ['_static']
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.10', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'numpy': ('https://docs.scipy.org/docs/numpy', None)
+    'numpy': ('https://docs.scipy.org/doc/numpy', None)
 }
