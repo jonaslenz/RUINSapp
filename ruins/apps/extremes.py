@@ -228,7 +228,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
             "Lower water level by x mm NHN before event.",
             (0, 50)
         )
-        Canal_area = st.radio(
+        canal_area = st.radio(
             "Share of water area on catchment [%].",
             (4, 6)
         )
