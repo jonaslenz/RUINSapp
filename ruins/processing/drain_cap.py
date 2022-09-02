@@ -74,7 +74,46 @@ def drain_cap(h_tide: np.ndarray, h_store: np.ndarray, h_min: int = -2000, pump_
 
 def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400, canal_area = 4, h_forecast_pump = 0, h_grad_pump_max = 6000, h_canal_max = -900, pump_par = pumpcap_fit, h_min_inner = -2000):
     """
-    Storage model used for the Krummhörn region
+    Storage model used for the Krummhoern region
+
+    Parameters
+    ----------
+    forcing_data : pd.DataFrame
+        time series forcing data of the storage model with the columns:
+         - 'recharge' the water volume [waterbalace mm] which flows into the storage
+         - 'h_tide' the outer (tidal) water level at the pumps [mm NHN]
+         - 'wig' a wind induced gradient [mm height] in the canals, which alters the flow capacity of the canals
+    canal_par : np.ndarray
+         parameters of the canal flow capacity
+    v_store : numeric
+        initial water volume [waterbalace mm] in the canals above target water level
+    h_store_target : numeric
+        target water level [mm NHN] in the canals
+    canal_area : numeric
+        share of water area on total landscape area [%]
+    h_forecast_pump : numeric
+        water level [mm height] which is substracted from target water level to allow lower canal water level before forecasted event
+    h_grad_pump_max : numeric
+        allowed maximal gradient [h_tide - h_min] for pumps, at which pumps will be turned off for their technical protection
+    pump_par : np.ndarray
+        parameters of the pump function
+    h_min : numeric
+        minimum water level height [mm NHN] at inner side of pumps
+
+    Returns
+    -------
+    h_store_rec : np.ndarray
+        water height in canals [mm NHN]
+    q_pump_rec : np.ndarray
+        possible drainage capacity by pumps [waterbalace mm]
+    h_min_rec : np.ndarray
+        evaluated lowest inner water level [mm NHN]
+    q_rec : np.ndarray
+        "real" flow [waterbalace mm], either limited by drainage capacity or pump capacity
+    usage_pump_rec : np.ndarray
+        Actually used percentage of possible pumping capacity
+    v_store_rec : np:ndarray
+        time series of water volume in storage [waterbalace mm]
     """
     store = []
     h_min = []
