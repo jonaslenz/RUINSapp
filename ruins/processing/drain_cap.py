@@ -125,6 +125,7 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
 
         # recharge storage
         v_store += step['recharge']
+        v_store_max_step = v_store
 
         cap = drain_cap(h_tide = step['h_tide'],                                      # parse tidal water level
                         h_store = np.min(((h_store_target + v_store*100/canal_area), h_canal_max)),   # limit maximal water flow at upper canal crest
@@ -142,14 +143,11 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
         v_store_rec = np.append(v_store_rec, v_store)
         h_min_rec = np.append(h_min_rec, cap[1])
         q_pump_rec = np.append(q_pump_rec, cap[2])
-            
+
+        v_flow = v_store_max_step - v_store
+        q_rec = np.append(q_rec, v_flow)
         # save "power consumption" of pumps
-        if(v_store > -h_forecast_pump):
-            flow = cap[0]
-        else:
-            flow = step['recharge']
-        q_rec = np.append(q_rec, flow)
-        usage_pump_rec = np.append(usage_pump_rec, flow/cap[2])
+        usage_pump_rec = np.append(usage_pump_rec, v_flow/cap[2])
 
     h_store_rec = h_store_target + v_store_rec*100/canal_area
     
