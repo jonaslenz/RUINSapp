@@ -82,21 +82,16 @@ def storage_model (x, z, storage = 0, h_store = -1400, canal_area = 4, advance_p
     pump_cost = []
     flow_rec = []
     
-    for idx, game in x.iterrows():
+    for step_id, step in x.iterrows():
 
         # recharge storage
-        storage += game['recharge']
+        storage += step['recharge']
 
-        # get drain_cap, do not pump if dh > than specified limit
-#        if(game['h_tide'] - (h_store + storage*100/canal_area)>maxdh):
-#            cap = [0,h_store + storage*100/canal_area, 0.0000000001]
-#        else:
-#        cap = drain_cap( , channel_par = z, dh = 1, wind_safe = game['wig'], gradmax = maxdh)
-        cap = drain_cap(h_tide = game['h_tide'],                                      # parse tidal water level
-                        h_store = (h_store + storage*100/canal_area),   # limit maximal water flow at upper canal crest
+        cap = drain_cap(h_tide = step['h_tide'],                                      # parse tidal water level
+                        h_store = (h_store + storage*100/canal_area),   
                         canal_par = z,                                     # parse canal parameters
                         h_increment = 1,                                              # increment inner water level by 1 mm steps
-                        h_wind_safe = game['wig'],                             # parse wind induced gradient
+                        h_wind_safe = step['wig'],                             # parse wind induced gradient
                         h_grad_pump_max = maxdh)                                     # parse maximum pump gradient
         # drain storage
         storage -= cap[0]
@@ -111,7 +106,7 @@ def storage_model (x, z, storage = 0, h_store = -1400, canal_area = 4, advance_p
         if(storage > -advance_pump):
             flow = cap[0]
         else:
-            flow = game['recharge']
+            flow = step['recharge']
         flow_rec = np.append(flow_rec, flow)
         pump_cost = np.append(pump_cost, flow/cap[2])
 
