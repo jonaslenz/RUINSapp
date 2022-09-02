@@ -99,7 +99,7 @@ def user_input_defaults():
     ## pump before event
     advance_pump = 0. # user input: st.radio(
         #"Forecast Pumping",
-        #(0, 4)
+        #(0, 50)
 
     ## visualisation of used pump capacity
     # pump_vis = st.radio("Pump capacity visualisation", ["absolute", "cumulative"])
@@ -225,8 +225,8 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     # pump before event
     #    advance_pump = st.number_input("Additional spare volume in canals", min_value=-5., max_value=8., value= 0., step=0.1)
         advance_pump = st.radio(
-            "Forecast Pumping",
-            (0, 4)
+            "Lower water level by x mm NHN before event.",
+            (0, 50)
         )
         Canal_area = st.radio(
             "Share of water area on catchment [%].",

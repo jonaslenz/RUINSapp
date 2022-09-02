@@ -138,7 +138,7 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
         # drain storage
         v_store -= cap[0]
         # compare new storage value to lower limit of storage
-        v_store = np.maximum(v_store, -h_forecast_pump)
+        v_store = np.maximum(v_store, -h_forecast_pump/100*canal_area)
         # save time step
         v_store_rec = np.append(v_store_rec, v_store)
         h_min_rec = np.append(h_min_rec, cap[1])
