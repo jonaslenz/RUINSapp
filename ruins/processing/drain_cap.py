@@ -151,4 +151,4 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
 
     h_store_rec = h_store_target + v_store_rec*100/canal_area
     
-    return (h_store_rec, q_pump_rec, h_min_rec, q_rec, usage_pump_rec)
+    return (h_store_rec, q_pump_rec, h_min_rec, q_rec, usage_pump_rec, v_store_rec)

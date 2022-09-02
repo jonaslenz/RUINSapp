@@ -168,7 +168,8 @@ def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_ar
          q_pump,
          x_df['h_min'], 
          x_df['flow_rec'], 
-         pump_cost) = drain_cap.storage_model(forcing_data = x_df,
+         pump_cost,
+         store_vol) = drain_cap.storage_model(forcing_data = x_df,
                                               canal_par = z, 
                                               v_store = 0, 
                                               h_store_target = -1350, # geändert von Jonas
