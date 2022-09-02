@@ -72,7 +72,7 @@ def drain_cap(h_tide: np.ndarray, h_store: np.ndarray, h_min: int = -2000, pump_
 
     return (q_channel, h_min, q_pump)
 
-def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400, canal_area = 4, advance_pump = 0, maxdh = 6000, pump_par = pumpcap_fit, h_min_inner = -2000):
+def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400, canal_area = 4, h_forecast_pump = 0, h_grad_pump_max = 6000, pump_par = pumpcap_fit, h_min_inner = -2000):
     """
     Storage model used for the Krummhörn region
     """
@@ -94,18 +94,18 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
                         canal_par = canal_par,                                     # parse canal parameters
                         h_increment = 1,                                              # increment inner water level by 1 mm steps
                         h_wind_safe = step['wig'],                             # parse wind induced gradient
-                        h_grad_pump_max = maxdh)                                     # parse maximum pump gradient
+                        h_grad_pump_max = h_grad_pump_max)                                     # parse maximum pump gradient
         # drain storage
         v_store -= cap[0]
         # compare new storage value to lower limit of storage
-        v_store = np.maximum(v_store, -advance_pump)
+        v_store = np.maximum(v_store, -h_forecast_pump)
         # save time step
         store = np.append(store, v_store)
         h_min = np.append(h_min, cap[1])
         q_pump = np.append(q_pump, cap[2])
             
         # save "power consumption" of pumps
-        if(v_store > -advance_pump):
+        if(v_store > -h_forecast_pump):
             flow = cap[0]
         else:
             flow = step['recharge']

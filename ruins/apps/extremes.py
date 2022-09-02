@@ -173,8 +173,8 @@ def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_ar
                                               v_store = 0, 
                                               h_store_target = -1350, # geändert von Jonas
                                               canal_area = canal_area, 
-                                              advance_pump = advance_pump, 
-                                              maxdh = maxdh,
+                                              h_forecast_pump = advance_pump, 
+                                              h_grad_pump_max = maxdh,
                                               pump_par = pumpcap_fit)
         model_runs.append((x_df['h_store'], pump_cost))
         #pump_capacity_model_runs.append(pump_cost)
