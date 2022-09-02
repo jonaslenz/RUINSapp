@@ -72,7 +72,7 @@ def drain_cap(h_tide: np.ndarray, h_store: np.ndarray, h_min: int = -2000, pump_
 
     return (q_channel, h_min, q_pump)
 
-def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400, canal_area = 4, h_forecast_pump = 0, h_grad_pump_max = 6000, h_canal_max = -900, pump_par = pumpcap_fit, h_min_inner = -2000):
+def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400, canal_area = 4, h_forecast_pump = 0, h_grad_pump_max = 6000, h_canal_max = -900, pump_par = pumpcap_fit, h_min = -2000):
     """
     Storage model used for the Krummhoern region
 
@@ -115,11 +115,11 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
     v_store_rec : np:ndarray
         time series of water volume in storage [waterbalace mm]
     """
-    store = []
-    h_min = []
-    q_pump = []
-    pump_cost = []
-    flow_rec = []
+    v_store_rec = []
+    h_min_rec = []
+    q_pump_rec = []
+    usage_pump_rec = []
+    q_rec = []
     
     for step_id, step in forcing_data.iterrows():
 
@@ -128,7 +128,7 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
 
         cap = drain_cap(h_tide = step['h_tide'],                                      # parse tidal water level
                         h_store = np.min(((h_store_target + v_store*100/canal_area), h_canal_max)),   # limit maximal water flow at upper canal crest
-                        h_min = h_min_inner,                                     # parse lowest inner water level
+                        h_min = h_min,                                     # parse lowest inner water level
                         pump_par = pump_par,                                     # parse pump parameters
                         canal_par = canal_par,                                     # parse canal parameters
                         h_increment = 1,                                              # increment inner water level by 1 mm steps
@@ -139,18 +139,18 @@ def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400,
         # compare new storage value to lower limit of storage
         v_store = np.maximum(v_store, -h_forecast_pump)
         # save time step
-        store = np.append(store, v_store)
-        h_min = np.append(h_min, cap[1])
-        q_pump = np.append(q_pump, cap[2])
+        v_store_rec = np.append(v_store_rec, v_store)
+        h_min_rec = np.append(h_min_rec, cap[1])
+        q_pump_rec = np.append(q_pump_rec, cap[2])
             
         # save "power consumption" of pumps
         if(v_store > -h_forecast_pump):
             flow = cap[0]
         else:
             flow = step['recharge']
-        flow_rec = np.append(flow_rec, flow)
-        pump_cost = np.append(pump_cost, flow/cap[2])
+        q_rec = np.append(q_rec, flow)
+        usage_pump_rec = np.append(usage_pump_rec, flow/cap[2])
 
-    h_store_rec = h_store_target + store*100/canal_area
+    h_store_rec = h_store_target + v_store_rec*100/canal_area
     
-    return (h_store_rec, q_pump, h_min, flow_rec, pump_cost)
+    return (h_store_rec, q_pump_rec, h_min_rec, q_rec, usage_pump_rec)
