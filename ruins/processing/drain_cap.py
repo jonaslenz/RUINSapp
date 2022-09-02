@@ -72,7 +72,7 @@ def drain_cap(h_tide: np.ndarray, h_store: np.ndarray, h_min: int = -2000, pump_
 
     return (q_channel, h_min, q_pump)
 
-def storage_model (x, canal_par, storage = 0, h_store = -1400, canal_area = 4, advance_pump = 0, maxdh = 6000, pump_par = pumpcap_fit, h_min_inner = -2000):
+def storage_model (forcing_data, canal_par, v_store = 0, h_store_target = -1400, canal_area = 4, advance_pump = 0, maxdh = 6000, pump_par = pumpcap_fit, h_min_inner = -2000):
     """
     Storage model used for the Krummhörn region
     """
@@ -82,13 +82,13 @@ def storage_model (x, canal_par, storage = 0, h_store = -1400, canal_area = 4, a
     pump_cost = []
     flow_rec = []
     
-    for step_id, step in x.iterrows():
+    for step_id, step in forcing_data.iterrows():
 
         # recharge storage
-        storage += step['recharge']
+        v_store += step['recharge']
 
         cap = drain_cap(h_tide = step['h_tide'],                                      # parse tidal water level
-                        h_store = (h_store + storage*100/canal_area),   
+                        h_store = (h_store_target + v_store*100/canal_area),
                         h_min = h_min_inner,                                     # parse lowest inner water level
                         pump_par = pump_par,                                     # parse pump parameters
                         canal_par = canal_par,                                     # parse canal parameters
@@ -96,22 +96,22 @@ def storage_model (x, canal_par, storage = 0, h_store = -1400, canal_area = 4, a
                         h_wind_safe = step['wig'],                             # parse wind induced gradient
                         h_grad_pump_max = maxdh)                                     # parse maximum pump gradient
         # drain storage
-        storage -= cap[0]
+        v_store -= cap[0]
         # compare new storage value to lower limit of storage
-        storage = np.maximum(storage, -advance_pump)
+        v_store = np.maximum(v_store, -advance_pump)
         # save time step
-        store = np.append(store, storage)
+        store = np.append(store, v_store)
         h_min = np.append(h_min, cap[1])
         q_pump = np.append(q_pump, cap[2])
             
         # save "power consumption" of pumps
-        if(storage > -advance_pump):
+        if(v_store > -advance_pump):
             flow = cap[0]
         else:
             flow = step['recharge']
         flow_rec = np.append(flow_rec, flow)
         pump_cost = np.append(pump_cost, flow/cap[2])
 
-    h_store_rec = h_store + store*100/canal_area
+    h_store_rec = h_store_target + store*100/canal_area
     
     return (h_store_rec, q_pump, h_min, flow_rec, pump_cost)
