@@ -72,7 +72,7 @@ def drain_cap(h_tide: np.ndarray, h_store: np.ndarray, h_min: int = -2000, pump_
 
     return (q_channel, h_min, q_pump)
 
-def storage_model (x, z, storage = 0, h_store = -1400, canal_area = 4, advance_pump = 0, maxdh = 6000):
+def storage_model (x, canal_par, storage = 0, h_store = -1400, canal_area = 4, advance_pump = 0, maxdh = 6000, pump_par = pumpcap_fit, h_min_inner = -2000):
     """
     Storage model used for the Krummhörn region
     """
@@ -89,7 +89,9 @@ def storage_model (x, z, storage = 0, h_store = -1400, canal_area = 4, advance_p
 
         cap = drain_cap(h_tide = step['h_tide'],                                      # parse tidal water level
                         h_store = (h_store + storage*100/canal_area),   
-                        canal_par = z,                                     # parse canal parameters
+                        h_min = h_min_inner,                                     # parse lowest inner water level
+                        pump_par = pump_par,                                     # parse pump parameters
+                        canal_par = canal_par,                                     # parse canal parameters
                         h_increment = 1,                                              # increment inner water level by 1 mm steps
                         h_wind_safe = step['wig'],                             # parse wind induced gradient
                         h_grad_pump_max = maxdh)                                     # parse maximum pump gradient
