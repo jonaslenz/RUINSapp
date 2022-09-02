@@ -2,8 +2,9 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-x = np.array([7.,6.,5.,4.,3.5,3.,2,1,0,5.,4.,3.5,3.,2])
-y = np.array([0,4.2,8.4,12.6,14.5,15.8,17.5,19,20.5,8.4,12.6,14.5,15.8,17.5])
+### Define parameters of the default pumping function / pump chart
+x = np.array([7.,6.,5.,4.,3.5,3.,2,1,0,5.,4.,3.5,3.,2]) * 1000 # water gradient [mm] (by factor 1000 from m)
+y = np.array([0,4.2,8.4,12.6,14.5,15.8,17.5,19,20.5,8.4,12.6,14.5,15.8,17.5]) * 3600 / (35000 * 100 * 100) * 1000 * 4  # "*3600 / (35000 * 100 * 100) * 1000 * 4)" converts m^3/s in mm/h
 pumpcap_fit = np.polynomial.polynomial.Polynomial.fit(x = x, y = y, deg = 2)
 
  
@@ -49,13 +50,12 @@ def drain_cap(h_tide: np.ndarray, h_store: np.ndarray, h_min: int = -2000, pump_
     pumplim = True
     
     # in case drainage ist limited by pumps, the minimum water level at knock increases until the flow is limited by channel_
+
     while pumplim:
         if(h_tide <= h_min):
-            q_pump_m3 = pump_par((1)/1000) # assume 1 mm gradient to pump to get some estimate - eventually sluicing is more effective
-            q_pump = q_pump_m3 * 3600 / (35000 * 100 * 100) * 1000 * 4  # "*3600 / (35000 * 100 * 100) * 1000 * 4)" converts m^3/s in mm/h
+            q_pump = pump_par(1) # assume 1 mm gradient to pump to get some estimate - eventually sluicing is more effective
         else:
-            q_pump_m3 = pump_par((h_tide - h_min)/1000)
-            q_pump = q_pump_m3 *3600 / (35000 * 100 * 100) * 1000 * 4  # "*3600 / (35000 * 100 * 100) * 1000 * 4)" converts m^3/s in mm/h
+            q_pump = pump_par(h_tide - h_min)
 
         if(((h_store - h_min) - wind_safe) <= 0):
             q_channel = 0.
