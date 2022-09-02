@@ -148,13 +148,13 @@ def create_initial_x_dataset(tide_data, hourly_recharge):
     return x 
 
 
-def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x_df, advance_pump, maxdh):    
+def create_model_runs_list(canal_flow_scale, canal_area, x_df, advance_pump, maxdh):    
     model_runs = []
     
-    kge_canal_par_df = all_kge_canal_par_df.loc[all_kge_canal_par_df.KGE == kge]
-    canal_par_array = kge_canal_par_df[['parexponent', 'parfactor']].to_numpy()
-    
-            ### Define parameters of the default pumping function / pump chart
+    ### Canal flow parameters from fitting of runoff to canal gradient data
+    canal_par_array = [[1.112,4156.],[1.045 , 2820.],[0.9946,2142.]]
+
+    ### Define parameters of the default pumping function / pump chart
     x = np.array([7.,6.,5.,4.,3.5,3.,2,1,0,5.,4.,3.5,3.,2]) * 1000 # water gradient [mm] (by factor 1000 from m)
     y = np.array([0,4.2,8.4,12.6,14.5,15.8,17.5,19,20.5,8.4,12.6,14.5,15.8,17.5]) * 3600 / (35000 * 100 * 100) * 1000 * 4  # "*3600 / (35000 * 100 * 100) * 1000 * 4)" converts m^3/s in mm/h
     pumpcap_fit = np.polynomial.polynomial.Polynomial.fit(x = x, y = y, deg = 2)
@@ -242,11 +242,10 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr)
 
     x = create_initial_x_dataset(tide, hourly_recharge)
+#    all_kge_canal_par_df = dataManager['kge_canal_par'].read()
 
-    all_kge_canal_par_df = dataManager['kge_canal_par'].read()
 
-
-    hg_model_runs = create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_area, x, advance_pump, maxdh)
+    hg_model_runs = create_model_runs_list(canal_flow_scale, canal_area, x, advance_pump, maxdh)
 
     # plotting:
     col1, col2 = container.columns(2)
