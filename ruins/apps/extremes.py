@@ -94,7 +94,7 @@ def user_input_defaults():
 
     canal_area = 4 # user input: st.radio(
         #"Share of water area on catchment [%].",
-        #(3, 4))
+        #(4, 6))
     
     ## pump before event
     advance_pump = 0. # user input: st.radio(
@@ -224,7 +224,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
         )
         Canal_area = st.radio(
             "Share of water area on catchment [%].",
-            (3, 4)
+            (4, 6)
         )
 
     # Model runs:
