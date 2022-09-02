@@ -154,6 +154,11 @@ def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_ar
     kge_canal_par_df = all_kge_canal_par_df.loc[all_kge_canal_par_df.KGE == kge]
     canal_par_array = kge_canal_par_df[['parexponent', 'parfactor']].to_numpy()
     
+            ### Define parameters of the default pumping function / pump chart
+    x = np.array([7.,6.,5.,4.,3.5,3.,2,1,0,5.,4.,3.5,3.,2]) * 1000 # water gradient [mm] (by factor 1000 from m)
+    y = np.array([0,4.2,8.4,12.6,14.5,15.8,17.5,19,20.5,8.4,12.6,14.5,15.8,17.5]) * 3600 / (35000 * 100 * 100) * 1000 * 4  # "*3600 / (35000 * 100 * 100) * 1000 * 4)" converts m^3/s in mm/h
+    pumpcap_fit = np.polynomial.polynomial.Polynomial.fit(x = x, y = y, deg = 2)
+
     for z in canal_par_array:
     
         z[1] /= canal_flow_scale
@@ -169,7 +174,8 @@ def create_model_runs_list(all_kge_canal_par_df, kge, canal_flow_scale, canal_ar
                                               h_store_target = -1350, # geändert von Jonas
                                               canal_area = canal_area, 
                                               advance_pump = advance_pump, 
-                                              maxdh = maxdh)
+                                              maxdh = maxdh,
+                                              pump_par = pumpcap_fit)
         model_runs.append((x_df['h_store'], pump_cost))
         #pump_capacity_model_runs.append(pump_cost)
     
