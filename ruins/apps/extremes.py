@@ -197,9 +197,8 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     with st.sidebar.expander("Sea level rise"):
         slr = st.radio(
             "Set SLR [mm]",
-            (0, 400, 800, 1200, 1600)
+            (0,154,249,379,432,522,730,848,918,1143,1676)
         )
-    
 
     with st.sidebar.expander("Precipitation intensity"):
         prec_increase = st.radio(
