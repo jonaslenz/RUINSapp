@@ -76,8 +76,7 @@ def user_input_defaults():
     # streamlit input stuff:
     
     slr = 400   # sea level rise in mm (0, 400, 800, 1200, 1600)
-
-    #recharge_vis = "absolute"   # "cumulative" or "absolute"
+    prec_increase = 1 #Intensify precipitation by factor
     
     # default event z.B.:
     time = list(events.keys())[1]
@@ -107,14 +106,14 @@ def user_input_defaults():
     # maxdh = st.number_input("Stop pumping if dh at Knock is greater than x dm\n(technical limit = 70dm)", min_value=10, max_value=70, value= 40, step=2) 
     maxdh = 4000 # nicht mehr user input
         
-    return slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh
+    return slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh, prec_increase
 
 
-def timeslice_observed_data(dataManager: DataManager, t1, t2, slr):
+def timeslice_observed_data(dataManager: DataManager, t1, t2, slr, prec_increase):
     
     extremes = dataManager['hydro_krummh'].read()
     # recharge
-    hourly_recharge = extremes['Prec'].to_dataframe().rolling("12h").mean()[t1:t2].squeeze() # changed by Jonas
+    hourly_recharge = extremes['Prec'].to_dataframe().rolling("12h").mean()[t1:t2].squeeze() * prec_increase # changed by Jonas
     # tide data
     tide = (extremes['wl_Knock_Outer'].to_dataframe()[t1:t2] + slr).squeeze()
     # water level
@@ -185,7 +184,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     st.sidebar.header('Control Panel')
 
 
-    slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh = user_input_defaults()
+    slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh, prec_increase = user_input_defaults()
 
     with st.sidebar.expander("Event selection"):
         time = st.radio(
@@ -202,6 +201,11 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
         )
     
 
+    with st.sidebar.expander("Precipitation intensity"):
+        prec_increase = st.radio(
+            "Intensify precipitation by factor",
+            (0.8, 0.9, 1, 1.1, 1.2, 1.3)
+        )
     
     with st.sidebar.expander("Management options"):
     # pump before event
@@ -220,7 +224,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     (tide, 
     hourly_recharge, 
     EVEx5_lw_pegel_timesliced, 
-    pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr)
+    pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr, prec_increase)
 
     x = create_initial_x_dataset(tide, hourly_recharge)
 
