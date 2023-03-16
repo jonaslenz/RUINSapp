@@ -81,11 +81,6 @@ def user_input_defaults():
     #if time == "2012":
     t1 = datetime.date(2011, 12, 28)
     t2 = datetime.date(2012, 1, 12)
-
-        
-    ## KGE
-    # kge = st.slider("Canal flow uncertainty [KGE * 100]",71,74, value = 74)
-    kge = 74 # nicht mehr user input
     
     ## canal flow input
     # canal_flow_scale = st.number_input("Factor to canal capacity", min_value=0.5, max_value=3., value= 1.0, step=0.1) 
@@ -108,7 +103,7 @@ def user_input_defaults():
     # maxdh = st.number_input("Stop pumping if dh at Knock is greater than x dm\n(technical limit = 70dm)", min_value=10, max_value=70, value= 40, step=2) 
     maxdh = 4000 # nicht mehr user input
         
-    return slr, t1, t2, kge, canal_flow_scale, canal_area, advance_pump, maxdh
+    return slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh
 
 
 def timeslice_observed_data(dataManager: DataManager, t1, t2, slr):
@@ -186,7 +181,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     st.sidebar.header('Control Panel')
 
 
-    slr, t1, t2, kge, canal_flow_scale, canal_area, advance_pump, maxdh = user_input_defaults()
+    slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh = user_input_defaults()
 
     with st.sidebar.expander("Event selection"):
         time = st.radio(
@@ -232,8 +227,6 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr)
 
     x = create_initial_x_dataset(tide, hourly_recharge)
-#    all_kge_canal_par_df = dataManager['kge_canal_par'].read()
-
 
     hg_model_runs = create_model_runs_list(canal_flow_scale, canal_area, x, advance_pump, maxdh)
 
