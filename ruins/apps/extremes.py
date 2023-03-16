@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+import pickle
 from plotly.subplots import make_subplots
 
 from ruins.core import build_config, debug_view, DataManager, Config
@@ -67,6 +68,9 @@ _INTRO_DE = dict(
 """
 )
 
+#load cached events
+with open('cache/events.pkl', 'rb') as file:
+    events = pickle.load(file)
 
 def user_input_defaults():
     # streamlit input stuff:
@@ -76,7 +80,7 @@ def user_input_defaults():
     #recharge_vis = "absolute"   # "cumulative" or "absolute"
     
     # default event z.B.:
-    time = "2012"
+    time = list(events.keys())[1]
     
     #if time == "2012":
     t1 = datetime.date(2011, 12, 28)
@@ -186,12 +190,10 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     with st.sidebar.expander("Event selection"):
         time = st.radio(
             "Event",
-            ("2012", "2017", "choose custom period")    # reduced to 2 nice events -> "custom period" only in expert mode or for self hosting users?
+            (events.keys())
         )
-        if time == 'choose custom period':
-            t1 = st.date_input("start", datetime.date(2017, 12, 1))
-            dt2 = st.number_input("Number of days", min_value=3, max_value=20, value= 10, step=1) 
-            t2 = t1 + datetime.timedelta(dt2)
+    t1 = events[time]
+    t2 = events[time]+datetime.timedelta(days=14)
     
     with st.sidebar.expander("Sea level rise"):
         slr = st.radio(
@@ -199,13 +201,7 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
             (0, 400, 800, 1200, 1600)
         )
     
-    if time == "2012":
-        t1 = datetime.date(2011, 12, 28)
-        t2 = datetime.date(2012, 1, 12)
 
-    if time == "2017":
-        t1 = datetime.date(2017, 3, 15)
-        t2 = datetime.date(2017, 3, 25)
     
     with st.sidebar.expander("Management options"):
     # pump before event
