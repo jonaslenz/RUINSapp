@@ -71,6 +71,8 @@ _INTRO_DE = dict(
 #load cached events
 with open('cache/events.pkl', 'rb') as file:
     events = pickle.load(file)
+with open('cache/canals.pkl', 'rb') as file:
+    canal_par = pickle.load(file)
 
 def user_input_defaults():
     # streamlit input stuff:
@@ -109,11 +111,11 @@ def user_input_defaults():
     return slr, t1, t2, canal_flow_scale, canal_area, advance_pump, maxdh, prec_increase
 
 
-def timeslice_observed_data(dataManager: DataManager, t1, t2, slr, prec_increase):
+def timeslice_observed_data(dataManager: DataManager, t1, t2, slr, prec_increase, prec_line):
     
     extremes = dataManager['hydro_krummh'].read()
     # recharge
-    hourly_recharge = extremes['Prec'].to_dataframe().rolling("12h").mean()[t1:t2].squeeze() * prec_increase # changed by Jonas
+    hourly_recharge = extremes[prec_line].to_dataframe().rolling("12h").mean()[t1:t2].squeeze() * prec_increase # changed by Jonas
     # tide data
     tide = (extremes['wl_Knock_Outer'].to_dataframe()[t1:t2] + slr).squeeze()
     # water level
@@ -136,11 +138,11 @@ def create_initial_x_dataset(tide_data, hourly_recharge):
     return x 
 
 
-def create_model_runs_list(canal_flow_scale, canal_area, x_df, advance_pump, maxdh):    
+def create_model_runs_list(canal_flow_scale, canal_area, x_df, advance_pump, maxdh, canal_par_array):
     model_runs = []
     
     ### Canal flow parameters from fitting of runoff to canal gradient data
-    canal_par_array = [[1.112,4156.],[1.045 , 2820.],[0.9946,2142.]]
+    #canal_par_array = [[1.112,4156.],[1.045 , 2820.],[0.9946,2142.]]
 
     ### Define parameters of the default pumping function / pump chart
     x = np.array([7.,6.,5.,4.,3.5,3.,2,1,0,5.,4.,3.5,3.,2]) * 1000 # water gradient [mm] (by factor 1000 from m)
@@ -200,22 +202,56 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
             (0,154,249,379,432,522,730,848,918,1143,1676)
         )
 
-    with st.sidebar.expander("Precipitation intensity"):
+    with st.sidebar.expander("Precipitation"):
         prec_increase = st.radio(
             "Intensify precipitation by factor",
             (0.8, 0.9, 1, 1.1, 1.2, 1.3)
         )
-    
+
+        prec_line = st.selectbox(
+            "Choose precipitation realization",
+            ('Prec', 'Prec_dissagg_1', 'Prec_dissagg_2', 'Prec_dissagg_3', 'Prec_dissagg_4',
+           'Prec_dissagg_5', 'Prec_dissagg_6', 'Prec_dissagg_7', 'Prec_dissagg_8',
+           'Prec_dissagg_9', 'Prec_dissagg_10', 'Prec_dissagg_11',
+           'Prec_dissagg_12', 'Prec_dissagg_13', 'Prec_dissagg_14',
+           'Prec_dissagg_15', 'Prec_dissagg_16', 'Prec_dissagg_17',
+           'Prec_dissagg_18', 'Prec_dissagg_19', 'Prec_dissagg_20',
+           'Prec_dissagg_21', 'Prec_dissagg_22', 'Prec_dissagg_23',
+           'Prec_dissagg_24', 'Prec_dissagg_25', 'Prec_dissagg_26',
+           'Prec_dissagg_27', 'Prec_dissagg_28', 'Prec_dissagg_29',
+           'Prec_dissagg_30', 'Prec_dissagg_31', 'Prec_dissagg_32',
+           'Prec_dissagg_33', 'Prec_dissagg_34', 'Prec_dissagg_35',
+           'Prec_dissagg_36', 'Prec_dissagg_37', 'Prec_dissagg_38',
+           'Prec_dissagg_39', 'Prec_dissagg_40', 'Prec_dissagg_41',
+           'Prec_dissagg_42', 'Prec_dissagg_43', 'Prec_dissagg_44',
+           'Prec_dissagg_45', 'Prec_dissagg_46', 'Prec_dissagg_47',
+           'Prec_dissagg_48', 'Prec_dissagg_49', 'Prec_dissagg_50',
+           'Prec_dissagg_51', 'Prec_dissagg_52', 'Prec_dissagg_53',
+           'Prec_dissagg_54', 'Prec_dissagg_55', 'Prec_dissagg_56',
+           'Prec_dissagg_57', 'Prec_dissagg_58', 'Prec_dissagg_59',
+           'Prec_dissagg_60', 'Prec_dissagg_61', 'Prec_dissagg_62',
+           'Prec_dissagg_63', 'Prec_dissagg_64', 'Prec_dissagg_65',
+           'Prec_dissagg_66', 'Prec_dissagg_67', 'Prec_dissagg_68',
+           'Prec_dissagg_69', 'Prec_dissagg_70', 'Prec_dissagg_71',
+           'Prec_dissagg_72', 'Prec_dissagg_73', 'Prec_dissagg_74',
+           'Prec_dissagg_75', 'Prec_dissagg_76', 'Prec_dissagg_77',
+           'Prec_dissagg_78', 'Prec_dissagg_79', 'Prec_dissagg_80')
+        )
+
     with st.sidebar.expander("Management options"):
     # pump before event
     #    advance_pump = st.number_input("Additional spare volume in canals", min_value=-5., max_value=8., value= 0., step=0.1)
         advance_pump = st.radio(
             "Lower water level by x mm NHN before event.",
-            (0, 50)
+            (0, 50, 200)
         )
         canal_area = st.radio(
             "Share of water area on catchment [%].",
             (4, 6)
+        )
+        maxdh = st.radio(
+            "Maximum pump gradient [mm]",
+            (1, 4500, 6000)
         )
 
     # Model runs:
@@ -223,11 +259,11 @@ def flood_model(dataManager: DataManager, config:Config, **kwargs):
     (tide, 
     hourly_recharge, 
     EVEx5_lw_pegel_timesliced, 
-    pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr, prec_increase)
+    pump_capacity_observed) = timeslice_observed_data(dataManager, t1, t2, slr, prec_increase, prec_line)
 
     x = create_initial_x_dataset(tide, hourly_recharge)
 
-    hg_model_runs = create_model_runs_list(canal_flow_scale, canal_area, x, advance_pump, maxdh)
+    hg_model_runs = create_model_runs_list(canal_flow_scale, canal_area, x, advance_pump, maxdh, canal_par)
 
     # plotting:
     col1, col2 = container.columns(2)
